@@ -1,0 +1,18 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+#mapa {
+  margin-top: 40px;
+}
+
+/* Asegurar que el SVG del mapa reciba eventos pointer (hover) */
+#mapa {
+  position: relative;
+  z-index: 0;
+}
+
+#mapa svg {
+  pointer-events: auto;
+}
