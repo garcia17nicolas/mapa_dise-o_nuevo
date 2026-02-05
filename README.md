@@ -130,5 +130,6 @@ npm install
 - Verifica que la API responda en http://localhost:3000/api/municipios
 
 ## 📞 Contacto / Soporte
+----- Ingeniero Nicolas Garcia 3106649899
 
 Para reportar errores o sugerencias, revisa los logs en la consola (F12 en navegador).
