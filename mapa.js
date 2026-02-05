@@ -1,5 +1,7 @@
 console.log('✅ Script mapa.js cargado');
 
+const API_BASE = 'http://localhost:3000/api';
+
 (async () => {
   try {
     console.log('✅ Highcharts disponible:', typeof Highcharts !== 'undefined');
@@ -107,10 +109,11 @@ console.log('✅ Script mapa.js cargado');
             path.style.strokeWidth = '';
           });
 
-          // CLICK PARA ZOOM
+          // CLICK: ir a página del municipio
           path.addEventListener('click', () => {
-            console.log('🖱️ CLICK:', point.name);
-            zoomToDepartment(point.name, geojson);
+            console.log('🖱️ CLICK - redirigiendo a municipio:', point.name);
+            const url = 'municipio.html?dept=' + encodeURIComponent(point.name);
+            window.location.href = url;
           });
 
           // CLICK DERECHO PARA ZOOM OUT

@@ -1,0 +1,33 @@
+{
+  "Antioquia": [
+    {
+      "id": 1707345600000,
+      "year": 2024,
+      "text": "En 2024, Antioquia implementó un programa de reforestación en colaboración con organizaciones ambientales. Se plantaron más de 50,000 árboles nativos en zonas degradadas.",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-05T10:30:00.000Z"
+    },
+    {
+      "id": 1707345700000,
+      "year": 2023,
+      "text": "Durante 2023 se realizaron jornadas de capacitación en tecnología agrícola sostenible, beneficiando a más de 200 productores locales.",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-05T10:35:00.000Z"
+    }
+  ],
+  "Magdalena": [
+    {
+      "id": 1707345800000,
+      "year": 2024,
+      "text": "Proyecto de turismo sostenible en iniciación. Se busca potenciar el turismo mientras se preservan los ecosistemas naturales.",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-05T10:40:00.000Z"
+    }
+  ]
+}

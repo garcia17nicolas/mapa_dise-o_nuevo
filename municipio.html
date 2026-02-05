@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Municipio - Info</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container{max-width:960px;margin:20px auto;padding:10px}
+    label{display:block;margin-top:10px}
+    textarea{width:100%;min-height:120px}
+    .entry{border:1px solid #ddd;padding:8px;margin:8px 0;border-radius:6px}
+    .controls{display:flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">Municipio</h1>
+
+    <div>
+      <strong>Filtrar por año:</strong>
+      <select id="filterYear"></select>
+      <button id="clearFilter">Mostrar todo</button>
+    </div>
+
+    <h2>Agregar información</h2>
+    <form id="infoForm">
+      <label>Año:
+        <input type="number" id="yearInput" min="1900" max="2100" required>
+      </label>
+      <label>Descripción / Observaciones:
+        <textarea id="textInput" required></textarea>
+      </label>
+      <label>Archivo (opcional):
+        <input type="file" id="fileInput">
+      </label>
+      <div style="margin-top:10px">
+        <button type="submit">Guardar</button>
+      </div>
+    </form>
+
+    <h2>Entradas</h2>
+    <div id="entries"></div>
+  </div>
+
+  <script src="municipio.js"></script>
+</body>
+</html>
