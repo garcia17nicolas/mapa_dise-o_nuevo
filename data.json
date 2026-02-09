@@ -1,4 +1,15 @@
 {
+  "Amazonas": [
+    {
+      "id": 1770329300349,
+      "year": 2026,
+      "text": "hola",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-05T22:08:20.349Z"
+    }
+  ],
   "Antioquia": [
     {
       "id": 1707345600000,
@@ -17,8 +28,73 @@
       "fileData": null,
       "published": true,
       "createdAt": "2026-02-05T10:35:00.000Z"
+    },
+    {
+      "id": 1770666661615,
+      "year": 2026,
+      "text": "hola",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-09T19:51:01.615Z"
     }
   ],
+  "Arauca": [
+    {
+      "id": 1770669457778,
+      "year": 2026,
+      "text": "hola",
+      "fileName": null,
+      "fileData": null,
+      "published": false,
+      "createdAt": "2026-02-09T20:37:37.778Z"
+    }
+  ],
+  "Atlántico": [],
+  "Bolívar": [],
+  "Boyacá": [
+    {
+      "id": 1770666815383,
+      "year": 2026,
+      "text": "Hola esto es un ensayo",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-09T19:53:35.383Z"
+    }
+  ],
+  "Caldas": [],
+  "Caquetá": [],
+  "Casanare": [],
+  "Cauca": [
+    {
+      "id": 1770675150381,
+      "year": 2026,
+      "text": "hola mi nombre es nicolas",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-09T22:12:30.381Z"
+    }
+  ],
+  "Cesar": [],
+  "Chocó": [],
+  "Córdoba": [],
+  "Cundinamarca": [],
+  "Guainía": [
+    {
+      "id": 1770666750857,
+      "year": 2026,
+      "text": "hola",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-09T19:52:30.857Z"
+    }
+  ],
+  "Guaviare": [],
+  "Huila": [],
+  "La Guajira": [],
   "Magdalena": [
     {
       "id": 1707345800000,
@@ -28,6 +104,50 @@
       "fileData": null,
       "published": true,
       "createdAt": "2026-02-05T10:40:00.000Z"
+    }
+  ],
+  "Meta": [],
+  "Nariño": [],
+  "Norte de Santander": [],
+  "Putumayo": [],
+  "Quindío": [],
+  "Risaralda": [],
+  "Santander": [],
+  "Sucre": [],
+  "Tolima": [],
+  "Valle del Cauca": [],
+  "Vaupés": [],
+  "Vichada": [],
+  "Bogotá D.C.": [],
+  "INZÁ": [
+    {
+      "id": 1770677201417,
+      "year": 2026,
+      "text": "hola esta es una prueba",
+      "fileName": "Ejercicios_PSeInt_Algoritmos_Basicos.pdf",
+      "fileData": "data:application/pdf;base64,JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgaHR0cDovL3d3dy5yZXBvcnRsYWIuY29tCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUgo+PgplbmRvYmoKMiAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYSAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjEgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iagozIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YyIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKNCAwIG9iago8PAovQ29udGVudHMgOCAwIFIgL01lZGlhQm94IFsgMCAwIDU5NS4yNzU2IDg0MS44ODk4IF0gL1BhcmVudCA3IDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9QYWdlTW9kZSAvVXNlTm9uZSAvUGFnZXMgNyAwIFIgL1R5cGUgL0NhdGFsb2cKPj4KZW5kb2JqCjYgMCBvYmoKPDwKL0F1dGhvciAoXChhbm9ueW1vdXNcKSkgL0NyZWF0aW9uRGF0ZSAoRDoyMDI2MDIwODIwMjUyMyswMCcwMCcpIC9DcmVhdG9yIChcKHVuc3BlY2lmaWVkXCkpIC9LZXl3b3JkcyAoKSAvTW9kRGF0ZSAoRDoyMDI2MDIwODIwMjUyMyswMCcwMCcpIC9Qcm9kdWNlciAoUmVwb3J0TGFiIFBERiBMaWJyYXJ5IC0gd3d3LnJlcG9ydGxhYi5jb20pIAogIC9TdWJqZWN0IChcKHVuc3BlY2lmaWVkXCkpIC9UaXRsZSAoXChhbm9ueW1vdXNcKSkgL1RyYXBwZWQgL0ZhbHNlCj4+CmVuZG9iago3IDAgb2JqCjw8Ci9Db3VudCAxIC9LaWRzIFsgNCAwIFIgXSAvVHlwZSAvUGFnZXMKPj4KZW5kb2JqCjggMCBvYmoKPDwKL0ZpbHRlciBbIC9BU0NJSTg1RGVjb2RlIC9GbGF0ZURlY29kZSBdIC9MZW5ndGggNjMxCj4+CnN0cmVhbQpHYXQ9aDlvSWFbJjtLWkwnbSEnbDJSV0d0QjViRERkUiJIcm9lQDdPUktOZUJHVTcuIXMxVF4qPWg1LmFZN1dcQEJKX2h0Mik+WHIpSm8wViI3WSpfZjVEKCIlZGE6IVxMTzxPJC85WG5aPSJLcEZUXnJtWGRXa05jakFGSUwoL1c7Y3JwJlhOWGNzN1Bsa2YiVychayxNSUtTZmFjSmU9QENcT3AoSjYobGktQUNnLzE8ZV9NPUA9JWNFI2dLJDgpMlBLME8yUCQvLSciVEFkdSooZSIoZWBkPjswXDRgMFxsMCtrcEU3JzVTYV0+WHJJLicybCYyIUIlIy8hPiwnL0IsIycyY2VlY2FEbmMpQFk/ODpcWTRRKj5xUFhkXUtbUjJzSnRDbTtDRDc7czdvVDZCbS9ZLyR1S25RL3EhOSw1VTVcXGIjN1FcYCNtQk1ScCRlXV8sa21QSUhwUVZLSEtIPG9IYE1ZdHFTQmE+JDpVOixpYTtYQ20tTmR0SGglbjJ1Zk9wJC5mOEVaYUpEbiMlPFpEWldwO0pFUkJtXCMtMCYjUDpQKkwmV0hJITVbcGVVTk9cSVkrVHUtPEVcQmFudGY8Wj02KU1uUVlMRWRmIUNSdSFSYVNcJCVMRHRXMGxgPHIiOiNKLmJkJjNgU0FbQzpQKyY9PGFtNzxBUCdzLD8+PkE9VVltUnVgWW5CWThfXFgqKWI6QVhiIkZPSCtgYWQrSFdBPWpSPDRwdC0iV1crKiNzMmMtNE5dNEklTyNaVztPSSg9XE9EYFJWSGMyMk9pT3NaT19xbWVVR1I+ND1dVEdRc20/dF87WlFBWDliW34+ZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgOQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwNzMgMDAwMDAgbiAKMDAwMDAwMDExNCAwMDAwMCBuIAowMDAwMDAwMjIxIDAwMDAwIG4gCjAwMDAwMDAzMzMgMDAwMDAgbiAKMDAwMDAwMDUzNiAwMDAwMCBuIAowMDAwMDAwNjA0IDAwMDAwIG4gCjAwMDAwMDA4ODcgMDAwMDAgbiAKMDAwMDAwMDk0NiAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9JRCAKWzw1MDk5ZjIwMDhiZDIyZDVkNzFhYzZhNDRhM2FjMmYwZj48NTA5OWYyMDA4YmQyMmQ1ZDcxYWM2YTQ0YTNhYzJmMGY+XQolIFJlcG9ydExhYiBnZW5lcmF0ZWQgUERGIGRvY3VtZW50IC0tIGRpZ2VzdCAoaHR0cDovL3d3dy5yZXBvcnRsYWIuY29tKQoKL0luZm8gNiAwIFIKL1Jvb3QgNSAwIFIKL1NpemUgOQo+PgpzdGFydHhyZWYKMTY2NwolJUVPRgo=",
+      "published": true,
+      "createdAt": "2026-02-09T22:46:41.417Z"
+    },
+    {
+      "id": 1770680432550,
+      "year": 2019,
+      "text": "Esto es un prueba",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-09T23:40:32.550Z"
+    }
+  ],
+  "EL TAMBO": [
+    {
+      "id": 1770679326063,
+      "year": 2026,
+      "text": "hola tambo",
+      "fileName": null,
+      "fileData": null,
+      "published": true,
+      "createdAt": "2026-02-09T23:22:06.063Z"
     }
   ]
 }

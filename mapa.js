@@ -1,213 +1,134 @@
 console.log('✅ Script mapa.js cargado');
 
-const API_BASE = 'http://localhost:3000/api';
-
 (async () => {
+  // Helper: fetch local geojson or remote fallback
+  async function loadGeoJSON(pathLocal, fallbackUrl) {
+    try {
+      const r = await fetch(pathLocal);
+      if (r.ok) return await r.json();
+    } catch (e) {
+      console.warn('No se pudo cargar local:', pathLocal, e);
+    }
+
+    try {
+      const r2 = await fetch(fallbackUrl);
+      if (r2.ok) return await r2.json();
+    } catch (e) {
+      console.error('No se pudo cargar fallback:', fallbackUrl, e);
+    }
+    return null;
+  }
+
+  // Small safe function to get a feature's display name
+  function featureName(feature) {
+    return (feature.properties && (feature.properties.MPIO_CNMBR || feature.properties.name || feature.properties.NOMBRE || feature.properties.NOMBRE_MUNIC)) || feature.id || 'Sin nombre';
+  }
+
+  // Build chart after loading geojson
   try {
-    console.log('✅ Highcharts disponible:', typeof Highcharts !== 'undefined');
-    
-    // Cargar el GeoJSON del mapa de Colombia
-    const geojson = await fetch(
-      'https://code.highcharts.com/mapdata/countries/co/co-all.geo.json'
-    ).then(res => res.json());
+    const geojson = await loadGeoJSON('./municipios.geojson', 'https://code.highcharts.com/mapdata/countries/co/co-all.geo.json');
+    if (!geojson) throw new Error('No GeoJSON disponible');
 
-    console.log('✅ GeoJSON cargado con', geojson.features.length, 'departamentos');
-
-    // Crear el mapa
+    // Create chart
     const chart = Highcharts.mapChart('mapa', {
-      chart: {
-        map: geojson,
-        borderWidth: 1,
-        backgroundColor: '#ffffff'
-      },
-
-      title: {
-        text: 'Mapa de Colombia'
-      },
-
-      subtitle: {
-        text: 'Haz click en un departamento para hacer zoom | Click derecho para alejarse'
-      },
-
-      colorAxis: {
-        min: 0,
-        max: 100,
-        type: 'linear',
-        minColor: '#e8f4f8',
-        maxColor: '#003d5c'
-      },
-
-      tooltip: {
-        enabled: true,
-        headerFormat: '',
-        pointFormat: '<b>{point.name}</b><br/>Valor: {point.value:.0f}'
-      },
-
-      mapNavigation: {
-        enabled: true,
-        buttonOptions: {
-          verticalAlign: 'bottom'
-        }
-      },
-
-      series: [
-        {
-          type: 'map',
-          name: 'Departamentos',
-          mapData: geojson,
-          
-          // Generar datos para cada feature del mapa
-          data: geojson.features.map((feature, idx) => ({
-            name: feature.properties.name,
-            value: Math.round(Math.random() * 100)
-          })),
-
-          // Mostrar nombres en el mapa
-          dataLabels: {
-            enabled: true,
-            format: '{point.name}',
-            style: {
-              fontSize: '10px',
-              fontWeight: 'bold',
-              color: '#000',
-              textOutline: '1px #fff'
+      chart: { map: geojson, animation: true, backgroundColor: '#ffffff' },
+      title: { text: geojson.features && geojson.features.length > 30 ? 'Mapa' : 'Municipios' },
+      subtitle: { text: 'Hover sobre un polígono para ver su nombre' },
+      mapNavigation: { enabled: true, buttonOptions: { verticalAlign: 'bottom' } },
+      tooltip: { enabled: false },
+      series: [{
+        type: 'map',
+        name: 'Áreas',
+        mapData: geojson,
+        joinBy: null,
+        allAreas: false,
+        color: '#d9eef6',
+        borderColor: '#ffffff',
+        borderWidth: 0.8,
+        data: geojson.features.map((f, i) => ({
+          name: featureName(f),
+          value: 0,
+          // preserve properties for later
+          properties: f.properties
+        })),
+        dataLabels: { enabled: false },
+        states: { hover: { color: 'rgba(70,130,180,0.5)' } },
+        point: {
+          events: {
+            mouseOver: function () {
+              // Log to console
+              try { console.log('HOVER:', this.name); } catch (e) {}
+              // Show HTML label
+              try { showHoverLabel(this, chart); } catch (e) {}
+              // Use Highcharts hover state to highlight the polygon (keeps highlight confined)
+              try { this.setState('hover'); } catch (e) {}
+            },
+            mouseOut: function () {
+              try { console.log('SALISTE:', this.name); } catch (e) {}
+              try { hideHoverLabel(); } catch (e) {}
+              try { this.setState(''); } catch (e) {}
+            },
+            click: function () {
+              try { window.location.href = 'municipio.html?dept=' + encodeURIComponent(this.name); } catch (e) {}
             }
-          },
-
-          // Estilos normales
-          color: '#dcdcdc',
-          borderColor: '#666',
-          borderWidth: 0.5
+          }
         }
-      ]
+      }]
     });
 
-    console.log('✅ Mapa creado');
+    // Create floating HTML label inside #mapa
+    const mapEl = document.getElementById('mapa');
+    let hoverDiv = document.getElementById('mapHoverLabel');
+    if (!hoverDiv) {
+      hoverDiv = document.createElement('div');
+      hoverDiv.id = 'mapHoverLabel';
+      hoverDiv.style.position = 'absolute';
+      hoverDiv.style.pointerEvents = 'none';
+      hoverDiv.style.padding = '6px 10px';
+      hoverDiv.style.background = 'rgba(0,0,0,0.75)';
+      hoverDiv.style.color = '#fff';
+      hoverDiv.style.borderRadius = '6px';
+      hoverDiv.style.fontSize = '13px';
+      hoverDiv.style.fontWeight = '700';
+      hoverDiv.style.transform = 'translate(-50%, -120%)';
+      hoverDiv.style.transition = 'opacity 120ms ease, transform 120ms ease';
+      hoverDiv.style.opacity = '0';
+      hoverDiv.style.zIndex = '2000';
+      hoverDiv.style.whiteSpace = 'nowrap';
+      mapEl.style.position = mapEl.style.position || 'relative';
+      mapEl.appendChild(hoverDiv);
+    }
 
-    // Agregar hover manualmente a los paths del SVG
-    setTimeout(() => {
-      const paths = document.querySelectorAll('#mapa svg path.highcharts-point');
-      console.log('✅ Paths encontrados:', paths.length);
-
-      paths.forEach((path, idx) => {
-        const point = chart.series[0].points[idx];
-        
-        if (point) {
-          path.style.cursor = 'pointer';
-          
-          path.addEventListener('mouseenter', () => {
-            console.log('✅ HOVER:', point.name);
-            path.style.fill = '#FF0000';
-            path.style.stroke = '#000';
-            path.style.strokeWidth = '2';
-          });
-
-          path.addEventListener('mouseleave', () => {
-            console.log('❌ SALISTE:', point.name);
-            path.style.fill = '';
-            path.style.stroke = '';
-            path.style.strokeWidth = '';
-          });
-
-          // CLICK: ir a página del municipio
-          path.addEventListener('click', () => {
-            console.log('🖱️ CLICK - redirigiendo a municipio:', point.name);
-            const url = 'municipio.html?dept=' + encodeURIComponent(point.name);
-            window.location.href = url;
-          });
-
-          // CLICK DERECHO PARA ZOOM OUT
-          path.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            console.log('🔍 ZOOM OUT');
-            zoomOutToFullMap();
-          });
+    function showHoverLabel(point, chartRef) {
+      if (!point || !point.name) return;
+      const name = point.name;
+      let px = 0, py = 0;
+      try {
+        if (typeof point.plotX === 'number' && typeof point.plotY === 'number') {
+          px = chartRef.plotLeft + point.plotX;
+          py = chartRef.plotTop + point.plotY;
+        } else if (point.shapeArgs) {
+          const sa = point.shapeArgs;
+          px = chartRef.plotLeft + (sa.x || 0) + ((sa.width || 0) / 2);
+          py = chartRef.plotTop + (sa.y || 0) + ((sa.height || 0) / 2);
         }
-      });
-
-      console.log('✅ Eventos de hover y zoom agregados');
-    }, 500);
-
-    // ===== FUNCIONES DE ZOOM =====
-
-    function zoomToDepartment(departmentName, geojson) {
-      const feature = geojson.features.find(f => f.properties.name === departmentName);
-      if (!feature) return;
-
-      const bbox = feature.bbox || getBbox(feature.geometry.coordinates);
-      
-      console.log(`🔍 Zoom a ${departmentName}:`, bbox);
-
-      // Aplicar zoom
-      chart.xAxis[0].setExtremes(bbox[0], bbox[2]);
-      chart.yAxis[0].setExtremes(bbox[1], bbox[3]);
-
-      // Mostrar botón de zoom out
-      showZoomOutButton();
+      } catch (e) { /* silent */ }
+      hoverDiv.textContent = name;
+      hoverDiv.style.left = px + 'px';
+      hoverDiv.style.top = py + 'px';
+      hoverDiv.style.opacity = '1';
+      hoverDiv.style.transform = 'translate(-50%, -120%) scale(1)';
     }
 
-    function zoomOutToFullMap() {
-      console.log('🔍 Volviendo al mapa completo');
-      
-      // Resetear ejes al rango original
-      chart.xAxis[0].setExtremes(null, null);
-      chart.yAxis[0].setExtremes(null, null);
-
-      hideZoomOutButton();
+    function hideHoverLabel() {
+      if (!hoverDiv) return;
+      hoverDiv.style.opacity = '0';
+      hoverDiv.style.transform = 'translate(-50%, -120%) scale(0.95)';
     }
 
-    function showZoomOutButton() {
-      let btn = document.getElementById('zoomOutBtn');
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.id = 'zoomOutBtn';
-        btn.innerHTML = '🔍 Zoom Out';
-        btn.style.cssText = `
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          padding: 10px 15px;
-          background-color: #FF6B6B;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-weight: bold;
-          font-size: 14px;
-          z-index: 1000;
-        `;
-        btn.onclick = zoomOutToFullMap;
-        document.getElementById('mapa').style.position = 'relative';
-        document.getElementById('mapa').parentElement.appendChild(btn);
-      }
-      btn.style.display = 'block';
-    }
+    console.log('✅ Mapa cargado con', (geojson.features && geojson.features.length) || 0, 'features');
 
-    function hideZoomOutButton() {
-      const btn = document.getElementById('zoomOutBtn');
-      if (btn) btn.style.display = 'none';
-    }
-
-    function getBbox(coordinates) {
-      // Calcular bounding box de las coordenadas
-      let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
-
-      function processCoord(coord) {
-        if (typeof coord[0] === 'number') {
-          minLon = Math.min(minLon, coord[0]);
-          maxLon = Math.max(maxLon, coord[0]);
-          minLat = Math.min(minLat, coord[1]);
-          maxLat = Math.max(maxLat, coord[1]);
-        } else {
-          coord.forEach(processCoord);
-        }
-      }
-
-      processCoord(coordinates);
-      return [minLon, minLat, maxLon, maxLat];
-    }
-
-  } catch (error) {
-    console.error('❌ Error:', error);
+  } catch (err) {
+    console.error('Error inicializando mapa:', err);
   }
 })();

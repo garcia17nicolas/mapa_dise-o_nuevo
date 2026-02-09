@@ -2,15 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Mapa Highcharts - Test</title>
+  <title>Nasa Kiwe</title>
 
   <!-- SOLO Highcharts Maps -->
   <script src="https://code.highcharts.com/maps/highmaps.js"></script>
+  <!-- TopoJSON client (para convertir .topo.json a GeoJSON en el navegador) -->
+  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
+  <!-- Proj4 para transformación de coordenadas WGS84 a Mercator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.min.js"></script>
 
 </head>
 <body>
 
-  <h1>Mapa de Colombia - Prueba Hover</h1>
+  <h1>Mapa de Colombia</h1>
 
   <div id="mapa" style="height: 600px; width: 100%;"></div>
 

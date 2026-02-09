@@ -22,20 +22,60 @@ function showAlert(msg, type = 'success') {
   setTimeout(() => { alertDiv.innerHTML = ''; }, 4000);
 }
 
-// Cargar lista de municipios
+// Cargar lista de municipios SOLO del Cauca desde GeoJSON local
 async function loadMunicipios() {
   try {
-    const res = await fetch(`${API_BASE}/municipios`);
-    const municipios = await res.json();
+    // Intentar cargar desde municipios.geojson local
+    const res = await fetch('./municipios.geojson');
+    const geojson = await res.json();
+    
+    // Extraer solo municipios del Cauca y obtener nombres únicos
+    const municipiosCauca = new Set();
+    let departmentName = "Cauca";
+    
+    if (geojson.features) {
+      geojson.features.forEach(feature => {
+        if (feature.properties && feature.properties.DPTO_CNMBR === "CAUCA") {
+          if (feature.properties.MPIO_CNMBR) {
+            municipiosCauca.add(feature.properties.MPIO_CNMBR);
+          }
+          departmentName = feature.properties.DPTO_CNMBR || "Cauca";
+        }
+      });
+    }
+    
+    // Mostrar nombre del departamento en header
+    const deptNameEl = document.getElementById('departmentName');
+    if (deptNameEl) {
+      deptNameEl.textContent = `🗺️ ${departmentName}`;
+    }
+    
+    // Llenar selector con municipios del Cauca
     municipioSelect.innerHTML = '<option value="">-- Selecciona un municipio --</option>';
-    municipios.forEach(m => {
+    Array.from(municipiosCauca).sort().forEach(m => {
       const opt = document.createElement('option');
       opt.value = m;
       opt.textContent = m;
       municipioSelect.appendChild(opt);
     });
+    
+    console.log(`Se cargaron ${municipiosCauca.size} municipios del ${departmentName}`);
   } catch (err) {
-    console.error('Error cargando municipios:', err);
+    console.error('Error cargando municipios desde GeoJSON:', err);
+    // Fallback al API anterior
+    try {
+      const res = await fetch(`${API_BASE}/municipios`);
+      const municipios = await res.json();
+      municipioSelect.innerHTML = '<option value="">-- Selecciona un municipio --</option>';
+      municipios.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        municipioSelect.appendChild(opt);
+      });
+    } catch (fallbackErr) {
+      console.error('Error fallback cargando municipios:', fallbackErr);
+    }
   }
 }
 
