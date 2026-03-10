@@ -6,6 +6,7 @@ const path = require('path');
 
 const app = express();
 const PORT = 3000;
+const MIN_YEAR = 2000;
 
 // Middleware
 app.use(cors());
@@ -39,13 +40,101 @@ function saveData(data) {
   }
 }
 
+function normalizeMediaList(items, onlyImages = false) {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map(item => ({
+      name: String(item?.name || '').trim(),
+      mimeType: String(item?.mimeType || ''),
+      data: String(item?.data || '')
+    }))
+    .filter(item => {
+      if (!item.name || !item.data.startsWith('data:')) return false;
+      if (onlyImages) return item.data.startsWith('data:image/');
+      return true;
+    });
+}
+
+function normalizeStoredEntry(entry) {
+  const safe = entry || {};
+
+  const documents = Array.isArray(safe.documents)
+    ? normalizeMediaList(safe.documents, false)
+    : (safe.fileName && safe.fileData ? [{
+        name: String(safe.fileName),
+        mimeType: String(safe.fileData).split(';')[0].replace('data:', '') || 'application/octet-stream',
+        data: String(safe.fileData)
+      }] : []);
+
+  const photos = Array.isArray(safe.photos)
+    ? normalizeMediaList(safe.photos, true)
+    : [];
+
+  return {
+    ...safe,
+    year: Number(safe.year),
+    text: String(safe.text || ''),
+    documents,
+    photos,
+    fileName: documents[0]?.name || null,
+    fileData: documents[0]?.data || null,
+    published: !!safe.published
+  };
+}
+
+function buildEntryPayload(body, existingEntry) {
+  const rawYear = body.year !== undefined ? body.year : existingEntry?.year;
+  const year = Number(rawYear);
+  const text = String(body.text !== undefined ? body.text : (existingEntry?.text || '')).trim();
+
+  if (!Number.isInteger(year) || year < MIN_YEAR || year > 2100) {
+    return { error: `El año debe ser un número entre ${MIN_YEAR} y 2100` };
+  }
+
+  if (!text) {
+    return { error: 'Año y descripción son requeridos' };
+  }
+
+  let documents;
+  if (Array.isArray(body.documents)) {
+    documents = normalizeMediaList(body.documents, false);
+  } else if (body.fileName && body.fileData) {
+    documents = normalizeMediaList([
+      {
+        name: body.fileName,
+        mimeType: String(body.fileData).split(';')[0].replace('data:', '') || 'application/octet-stream',
+        data: body.fileData
+      }
+    ], false);
+  } else {
+    documents = normalizeStoredEntry(existingEntry).documents;
+  }
+
+  const photos = Array.isArray(body.photos)
+    ? normalizeMediaList(body.photos, true)
+    : normalizeStoredEntry(existingEntry).photos;
+
+  return {
+    payload: {
+      year,
+      text,
+      documents,
+      photos,
+      fileName: documents[0]?.name || null,
+      fileData: documents[0]?.data || null,
+      published: body.published !== undefined ? !!body.published : !!existingEntry?.published
+    }
+  };
+}
+
 // ===== API ENDPOINTS =====
 
 // GET: obtener todas las entradas de un municipio (solo publicadas)
 app.get('/api/municipio/:dept', (req, res) => {
   const dept = decodeURIComponent(req.params.dept);
   const data = loadData();
-  const entries = data[dept] || [];
+  const entries = (data[dept] || []).map(normalizeStoredEntry);
   // Filtrar solo publicadas
   const published = entries.filter(e => e.published === true);
   res.json(published);
@@ -55,17 +144,17 @@ app.get('/api/municipio/:dept', (req, res) => {
 app.get('/api/admin/municipio/:dept', (req, res) => {
   const dept = decodeURIComponent(req.params.dept);
   const data = loadData();
-  const entries = data[dept] || [];
+  const entries = (data[dept] || []).map(normalizeStoredEntry);
   res.json(entries);
 });
 
 // POST: guardar una entrada (admin)
 app.post('/api/admin/municipio/:dept', (req, res) => {
   const dept = decodeURIComponent(req.params.dept);
-  const { year, text, fileName, fileData, published } = req.body;
+  const built = buildEntryPayload(req.body, {});
 
-  if (!year || !text) {
-    return res.status(400).json({ error: 'Año y descripción son requeridos' });
+  if (built.error) {
+    return res.status(400).json({ error: built.error });
   }
 
   const data = loadData();
@@ -73,11 +162,7 @@ app.post('/api/admin/municipio/:dept', (req, res) => {
 
   const entry = {
     id: Date.now(),
-    year,
-    text,
-    fileName,
-    fileData,
-    published: published || false,
+    ...built.payload,
     createdAt: new Date().toISOString()
   };
 
@@ -93,7 +178,6 @@ app.post('/api/admin/municipio/:dept', (req, res) => {
 app.put('/api/admin/municipio/:dept/:id', (req, res) => {
   const dept = decodeURIComponent(req.params.dept);
   const entryId = Number(req.params.id);
-  const { year, text, fileName, fileData, published } = req.body;
 
   const data = loadData();
   if (!data[dept]) {
@@ -105,11 +189,18 @@ app.put('/api/admin/municipio/:dept/:id', (req, res) => {
     return res.status(404).json({ error: 'Entrada no encontrada' });
   }
 
-  entry.year = year || entry.year;
-  entry.text = text || entry.text;
-  entry.fileName = fileName !== undefined ? fileName : entry.fileName;
-  entry.fileData = fileData !== undefined ? fileData : entry.fileData;
-  entry.published = published !== undefined ? published : entry.published;
+  const built = buildEntryPayload(req.body, entry);
+  if (built.error) {
+    return res.status(400).json({ error: built.error });
+  }
+
+  entry.year = built.payload.year;
+  entry.text = built.payload.text;
+  entry.documents = built.payload.documents;
+  entry.photos = built.payload.photos;
+  entry.fileName = built.payload.fileName;
+  entry.fileData = built.payload.fileData;
+  entry.published = built.payload.published;
 
   if (saveData(data)) {
     res.json({ success: true, entry });

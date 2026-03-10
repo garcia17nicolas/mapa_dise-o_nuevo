@@ -59,6 +59,7 @@
           <select id="municipioSelect">
             <option value="">-- Selecciona un municipio --</option>
           </select>
+          <button id="newEntryBtn" type="button">+ Nueva Entrada</button>
           <button id="newMunicipioBtn">+ Nuevo Municipio</button>
         </div>
       </div>
@@ -70,16 +71,25 @@
         </div>
         <div class="form-group">
           <label>Año:</label>
-          <input type="number" id="yearInput" min="1900" max="2100" required>
+          <input type="number" id="yearInput" min="2000" max="2100" required>
         </div>
         <div class="form-group">
           <label>Descripción/Información:</label>
           <textarea id="textInput" required></textarea>
         </div>
         <div class="form-group">
-          <label>Archivo (PDF, DOC, IMG, etc.):</label>
-          <input type="file" id="fileInput">
-          <small style="color:#666;">Archivos hasta 10MB. El archivo se incrustará con la información.</small>
+          <label>Documentos (PDF, DOC, XLS, etc.):</label>
+          <input type="file" id="documentsInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
+          <small style="color:#666;">Si cargas nuevos documentos en edición, reemplazarán los anteriores de la entrada.</small>
+        </div>
+        <div class="form-group">
+          <label>Fotos (JPG, PNG, WEBP):</label>
+          <input type="file" id="photosInput" multiple accept="image/*">
+          <small style="color:#666;">Puedes subir varias fotos por entrada.</small>
+        </div>
+        <div class="form-group" id="editAttachmentsInfo" style="display:none; color:#555; font-size:13px;"></div>
+        <div class="form-group">
+          <small style="color:#666;">Tamaño recomendado: max 10MB por archivo.</small>
         </div>
         <div class="form-group">
           <label>

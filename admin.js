@@ -1,56 +1,92 @@
 // admin.js - Dashboard administrativo para municipios
 const API_BASE = 'http://localhost:3000/api';
+const MIN_YEAR = 2000;
 
 const municipioSelect = document.getElementById('municipioSelect');
+const newEntryBtn = document.getElementById('newEntryBtn');
 const newMunicipioBtn = document.getElementById('newMunicipioBtn');
 const entryForm = document.getElementById('entryForm');
 const deptInput = document.getElementById('deptInput');
 const yearInput = document.getElementById('yearInput');
 const textInput = document.getElementById('textInput');
-const fileInput = document.getElementById('fileInput');
+const documentsInput = document.getElementById('documentsInput');
+const photosInput = document.getElementById('photosInput');
+const editAttachmentsInfo = document.getElementById('editAttachmentsInfo');
 const publishedCheckbox = document.getElementById('publishedCheckbox');
 const cancelBtn = document.getElementById('cancelBtn');
 const entriesList = document.getElementById('entriesList');
 const alertDiv = document.getElementById('alert');
 
 let editingId = null;
-let currentDept = null;
+let editingEntry = null;
 
-// Mostrar alerta
 function showAlert(msg, type = 'success') {
   alertDiv.innerHTML = `<div class="alert ${type}">${msg}</div>`;
-  setTimeout(() => { alertDiv.innerHTML = ''; }, 4000);
+  setTimeout(() => {
+    alertDiv.innerHTML = '';
+  }, 4000);
 }
 
-// Cargar lista de municipios SOLO del Cauca desde GeoJSON local
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeEntry(entry) {
+  const safe = entry || {};
+  const documents = Array.isArray(safe.documents)
+    ? safe.documents.filter(d => d && d.name && d.data)
+    : (safe.fileName && safe.fileData ? [{
+        name: safe.fileName,
+        data: safe.fileData,
+        mimeType: String(safe.fileData).split(';')[0].replace('data:', '') || 'application/octet-stream'
+      }] : []);
+
+  const photos = Array.isArray(safe.photos)
+    ? safe.photos.filter(p => p && p.name && p.data)
+    : [];
+
+  return {
+    ...safe,
+    year: Number(safe.year) || MIN_YEAR,
+    text: String(safe.text || ''),
+    published: !!safe.published,
+    documents,
+    photos
+  };
+}
+
+function getSelectedDept() {
+  return (municipioSelect.value || '').trim();
+}
+
 async function loadMunicipios() {
   try {
-    // Intentar cargar desde municipios.geojson local
     const res = await fetch('./municipios.geojson');
     const geojson = await res.json();
-    
-    // Extraer solo municipios del Cauca y obtener nombres únicos
     const municipiosCauca = new Set();
-    let departmentName = "Cauca";
-    
+    let departmentName = 'Cauca';
+
     if (geojson.features) {
       geojson.features.forEach(feature => {
-        if (feature.properties && feature.properties.DPTO_CNMBR === "CAUCA") {
+        if (feature.properties && feature.properties.DPTO_CNMBR === 'CAUCA') {
           if (feature.properties.MPIO_CNMBR) {
             municipiosCauca.add(feature.properties.MPIO_CNMBR);
           }
-          departmentName = feature.properties.DPTO_CNMBR || "Cauca";
+          departmentName = feature.properties.DPTO_CNMBR || 'Cauca';
         }
       });
     }
-    
-    // Mostrar nombre del departamento en header
+
     const deptNameEl = document.getElementById('departmentName');
     if (deptNameEl) {
       deptNameEl.textContent = `🗺️ ${departmentName}`;
     }
-    
-    // Llenar selector con municipios del Cauca
+
     municipioSelect.innerHTML = '<option value="">-- Selecciona un municipio --</option>';
     Array.from(municipiosCauca).sort().forEach(m => {
       const opt = document.createElement('option');
@@ -58,11 +94,8 @@ async function loadMunicipios() {
       opt.textContent = m;
       municipioSelect.appendChild(opt);
     });
-    
-    console.log(`Se cargaron ${municipiosCauca.size} municipios del ${departmentName}`);
   } catch (err) {
     console.error('Error cargando municipios desde GeoJSON:', err);
-    // Fallback al API anterior
     try {
       const res = await fetch(`${API_BASE}/municipios`);
       const municipios = await res.json();
@@ -79,39 +112,49 @@ async function loadMunicipios() {
   }
 }
 
-// Cargar entradas del municipio seleccionado
 async function loadEntries() {
-  const dept = municipioSelect.value;
-  if (!dept) { entriesList.innerHTML = '<p class="no-entries">Selecciona un municipio</p>'; return; }
+  const dept = getSelectedDept();
+  if (!dept) {
+    entriesList.innerHTML = '<p class="no-entries">Selecciona un municipio</p>';
+    return;
+  }
 
-  currentDept = dept;
   try {
     const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
-    const entries = await res.json();
-    
+    const entries = (await res.json()).map(normalizeEntry).sort((a, b) => Number(b.year) - Number(a.year));
+
     entriesList.innerHTML = '';
-    if (entries.length === 0) { entriesList.innerHTML = '<p class="no-entries">Sin entradas</p>'; return; }
+    if (entries.length === 0) {
+      entriesList.innerHTML = '<p class="no-entries">Sin entradas</p>';
+      return;
+    }
 
     entries.forEach(e => {
       const el = document.createElement('div');
       el.className = 'entry';
-      const badge = e.published ? '<span class="badge published">✓ Publicado</span>' : '<span class="badge draft">📋 Borrador</span>';
+      const badge = e.published
+        ? '<span class="badge published">✓ Publicado</span>'
+        : '<span class="badge draft">📋 Borrador</span>';
+
+      const photosPreview = e.photos.length
+        ? `<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">${e.photos.slice(0, 4).map(p => `<img src="${p.data}" alt="${escapeHtml(p.name)}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">`).join('')}</div>`
+        : '';
+
       el.innerHTML = `
         <div class="entry-header">
           <div>
             <div class="entry-title">Año ${e.year} ${badge}</div>
-            <div class="entry-meta">Creado: ${new Date(e.createdAt).toLocaleDateString('es-ES')}</div>
+            <div class="entry-meta">Creado: ${e.createdAt ? new Date(e.createdAt).toLocaleDateString('es-ES') : 'N/D'}</div>
           </div>
           <div class="entry-buttons">
-            <button type="button" class="publish" onclick="togglePublish(${e.id})">
-              ${e.published ? '👁️ Despu.' : '👁️ Pub.'}
-            </button>
+            <button type="button" class="publish" onclick="togglePublish(${e.id})">${e.published ? '👁️ Ocultar' : '👁️ Publicar'}</button>
             <button type="button" onclick="editEntry(${e.id})">✏️ Editar</button>
             <button type="button" class="danger" onclick="deleteEntry(${e.id})">🗑️ Eliminar</button>
           </div>
         </div>
-        <div class="entry-text">${e.text.replace(/\n/g, '<br>')}</div>
-        ${e.fileName ? `<div><small>📎 Archivo: ${e.fileName}</small></div>` : ''}
+        <div class="entry-text">${escapeHtml(e.text).replace(/\n/g, '<br>')}</div>
+        <div><small>📎 Documentos: ${e.documents.length} | 🖼️ Fotos: ${e.photos.length}</small></div>
+        ${photosPreview}
       `;
       entriesList.appendChild(el);
     });
@@ -121,69 +164,84 @@ async function loadEntries() {
   }
 }
 
-// Editar entrada
+async function getEntryById(dept, entryId) {
+  const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
+  const entries = (await res.json()).map(normalizeEntry);
+  return entries.find(e => Number(e.id) === Number(entryId));
+}
+
 async function editEntry(entryId) {
-  const dept = municipioSelect.value;
+  const dept = getSelectedDept();
+  if (!dept) return;
+
   try {
-    const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
-    const entries = await res.json();
-    const entry = entries.find(e => e.id === entryId);
-    
+    const entry = await getEntryById(dept, entryId);
     if (!entry) return;
 
+    deptInput.value = dept;
     yearInput.value = entry.year;
     textInput.value = entry.text;
     publishedCheckbox.checked = entry.published;
     editingId = entryId;
+    editingEntry = entry;
     entryForm.style.display = 'block';
+
+    const docsNames = entry.documents.slice(0, 5).map(d => escapeHtml(d.name)).join(', ');
+    editAttachmentsInfo.style.display = 'block';
+    editAttachmentsInfo.innerHTML = `Editando entrada: ${entry.documents.length} documento(s), ${entry.photos.length} foto(s). ${docsNames ? `Documentos actuales: ${docsNames}` : ''}`;
     yearInput.focus();
   } catch (err) {
     console.error('Error editando:', err);
+    showAlert('Error al abrir la entrada para editar', 'error');
   }
 }
 
-// Cambiar estado de publicación
 async function togglePublish(entryId) {
-  const dept = municipioSelect.value;
+  const dept = getSelectedDept();
+  if (!dept) return;
+
   try {
-    const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
-    const entries = await res.json();
-    const entry = entries.find(e => e.id === entryId);
-    
+    const entry = await getEntryById(dept, entryId);
     if (!entry) return;
 
-    const update = await fetch(
-      `${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...entry, published: !entry.published })
-      }
-    );
-    
+    const update = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...entry,
+        published: !entry.published,
+        fileName: entry.documents[0]?.name || null,
+        fileData: entry.documents[0]?.data || null
+      })
+    });
+
     if (update.ok) {
-      showAlert(entry.published ? 'Entrada despublicada' : 'Entrada publicada');
+      showAlert(entry.published ? 'Entrada ocultada del público' : 'Entrada publicada');
       loadEntries();
+    } else {
+      showAlert('No se pudo cambiar el estado de publicación', 'error');
     }
   } catch (err) {
-    console.error('Error:', err);
+    console.error('Error publicando:', err);
+    showAlert('Error al cambiar publicación', 'error');
   }
 }
 
-// Eliminar entrada
 async function deleteEntry(entryId) {
   if (!confirm('¿Eliminar esta entrada?')) return;
-  
-  const dept = municipioSelect.value;
+  const dept = getSelectedDept();
+  if (!dept) return;
+
   try {
-    const res = await fetch(
-      `${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`,
-      { method: 'DELETE' }
-    );
-    
+    const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
+      method: 'DELETE'
+    });
+
     if (res.ok) {
       showAlert('Entrada eliminada');
       loadEntries();
+    } else {
+      showAlert('No se pudo eliminar la entrada', 'error');
     }
   } catch (err) {
     console.error('Error eliminando:', err);
@@ -191,29 +249,106 @@ async function deleteEntry(entryId) {
   }
 }
 
-// Enviar formulario
-entryForm.addEventListener('submit', async (ev) => {
+function readFileAsDataURL(file) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(fr.error);
+    fr.readAsDataURL(file);
+  });
+}
+
+async function readFilesPayload(fileList) {
+  const files = Array.from(fileList || []);
+  const maxFileSize = 10 * 1024 * 1024;
+
+  for (const file of files) {
+    if (file.size > maxFileSize) {
+      throw new Error(`El archivo "${file.name}" supera el límite de 10MB.`);
+    }
+  }
+
+  return Promise.all(files.map(async file => ({
+    name: file.name,
+    mimeType: file.type || 'application/octet-stream',
+    data: await readFileAsDataURL(file)
+  })));
+}
+
+function openNewEntryForm() {
+  const dept = getSelectedDept();
+  if (!dept) {
+    showAlert('Primero selecciona un municipio', 'error');
+    return;
+  }
+
+  resetForm(false);
+  deptInput.value = dept;
+  yearInput.value = new Date().getFullYear();
+  entryForm.style.display = 'block';
+  textInput.focus();
+}
+
+function resetForm(hideForm = true) {
+  entryForm.reset();
+  if (hideForm) {
+    entryForm.style.display = 'none';
+  }
+  editingId = null;
+  editingEntry = null;
+  publishedCheckbox.checked = false;
+  editAttachmentsInfo.style.display = 'none';
+  editAttachmentsInfo.textContent = '';
+}
+
+entryForm.addEventListener('submit', async ev => {
   ev.preventDefault();
-  const dept = municipioSelect.value;
+
+  const dept = getSelectedDept();
   const year = Number(yearInput.value);
   const text = textInput.value.trim();
-  
-  if (!text) { showAlert('Escriba una descripción', 'error'); return; }
 
-  let fileData = null, fileName = null;
-  const file = fileInput.files?.[0];
-  if (file) {
-    fileName = file.name;
-    fileData = await readFileAsDataURL(file);
+  if (!dept) {
+    showAlert('Selecciona un municipio', 'error');
+    return;
+  }
+
+  if (!Number.isInteger(year) || year < MIN_YEAR) {
+    showAlert(`El año debe ser un número mayor o igual a ${MIN_YEAR}`, 'error');
+    return;
+  }
+
+  if (!text) {
+    showAlert('Escribe una descripción', 'error');
+    return;
   }
 
   try {
+    const uploadedDocs = await readFilesPayload(documentsInput.files);
+    const uploadedPhotos = await readFilesPayload(photosInput.files);
+
+    const documents = uploadedDocs.length
+      ? uploadedDocs
+      : (editingEntry?.documents || []);
+
+    const photos = uploadedPhotos.length
+      ? uploadedPhotos
+      : (editingEntry?.photos || []);
+
     const method = editingId ? 'PUT' : 'POST';
-    const url = editingId 
+    const url = editingId
       ? `${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${editingId}`
       : `${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`;
 
-    const body = { year, text, fileName, fileData, published: publishedCheckbox.checked };
+    const body = {
+      year,
+      text,
+      documents,
+      photos,
+      fileName: documents[0]?.name || null,
+      fileData: documents[0]?.data || null,
+      published: publishedCheckbox.checked
+    };
 
     const res = await fetch(url, {
       method,
@@ -227,44 +362,44 @@ entryForm.addEventListener('submit', async (ev) => {
       loadEntries();
       loadMunicipios();
     } else {
-      showAlert('Error al guardar', 'error');
+      const errData = await res.json().catch(() => ({}));
+      showAlert(errData.error || 'Error al guardar', 'error');
     }
   } catch (err) {
-    console.error('Error:', err);
-    showAlert('Error al guardar', 'error');
+    console.error('Error guardando:', err);
+    showAlert(err.message || 'Error al guardar', 'error');
   }
 });
 
-function readFileAsDataURL(file) {
-  return new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(fr.result);
-    fr.onerror = () => rej(fr.error);
-    fr.readAsDataURL(file);
-  });
-}
+municipioSelect.addEventListener('change', () => {
+  const dept = getSelectedDept();
+  deptInput.value = dept;
+  resetForm();
+  loadEntries();
+});
 
-function resetForm() {
-  entryForm.reset();
-  entryForm.style.display = 'none';
-  editingId = null;
-  publishedCheckbox.checked = false;
-}
+newEntryBtn.addEventListener('click', openNewEntryForm);
+cancelBtn.addEventListener('click', () => resetForm());
 
-// Botones
-municipioSelect.addEventListener('change', loadEntries);
-cancelBtn.addEventListener('click', resetForm);
 newMunicipioBtn.addEventListener('click', () => {
-  const nuevoDept = prompt('Nombre del nuevo municipio:');
-  if (nuevoDept) {
-    municipioSelect.value = nuevoDept;
-    currentDept = nuevoDept;
-    deptInput.value = nuevoDept;
-    entryForm.style.display = 'block';
-    yearInput.value = new Date().getFullYear();
-    textInput.focus();
+  const nuevoDept = (prompt('Nombre del nuevo municipio:') || '').trim();
+  if (!nuevoDept) return;
+
+  let existing = Array.from(municipioSelect.options).find(o => o.value.toLowerCase() === nuevoDept.toLowerCase());
+  if (!existing) {
+    existing = document.createElement('option');
+    existing.value = nuevoDept;
+    existing.textContent = nuevoDept;
+    municipioSelect.appendChild(existing);
   }
+
+  municipioSelect.value = existing.value;
+  openNewEntryForm();
 });
 
-// Inicializar
+// Exponer funciones para botones inline
+window.editEntry = editEntry;
+window.togglePublish = togglePublish;
+window.deleteEntry = deleteEntry;
+
 loadMunicipios();
