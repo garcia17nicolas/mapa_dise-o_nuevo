@@ -17,6 +17,17 @@ const cancelBtn = document.getElementById('cancelBtn');
 const entriesList = document.getElementById('entriesList');
 const alertDiv = document.getElementById('alert');
 
+// ── Campos viales nuevos ────────────────────────────────────────────────────
+const nombreProyectoInput = document.getElementById('nombreProyectoInput');
+const tipoObraInput       = document.getElementById('tipoObraInput');
+const estadoInput         = document.getElementById('estadoInput');
+const avanceInput         = document.getElementById('avanceInput');
+const avanceLabel         = document.getElementById('avanceLabel');
+const contratistaInput    = document.getElementById('contratistaInput');
+const valorInput          = document.getElementById('valorInput');
+const fechaInicioInput    = document.getElementById('fechaInicioInput');
+const fechaFinInput       = document.getElementById('fechaFinInput');
+
 let editingId = null;
 let editingEntry = null;
 
@@ -132,19 +143,54 @@ async function loadEntries() {
     entries.forEach(e => {
       const el = document.createElement('div');
       el.className = 'entry';
+
       const badge = e.published
         ? '<span class="badge published">✓ Publicado</span>'
         : '<span class="badge draft">📋 Borrador</span>';
 
+      // Color por estado
+      const colorEstado = {
+        'En ejecución': '#2563eb', 'Terminado': '#16a34a',
+        'Suspendido': '#dc2626',   'En planeación': '#9333ea'
+      };
+      const col = colorEstado[e.estado] || '#6b7280';
+      const pct = e.porcentaje_avance ?? 0;
+
+      // Barra de progreso
+      const barraHtml = `
+        <div style="margin:8px 0 4px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:3px;">
+            <span style="font-weight:600;color:${col};">${e.estado || 'Sin estado'}</span>
+            <span style="font-weight:700;color:${col};">${pct}%</span>
+          </div>
+          <div style="height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;transition:width .3s;"></div>
+          </div>
+        </div>`;
+
+      // Datos clave en línea
+      const metaHtml = [
+        e.nombre_proyecto    ? `<span>📋 ${escapeHtml(e.nombre_proyecto)}</span>`       : '',
+        e.tipo_obra          ? `<span>🔧 ${escapeHtml(e.tipo_obra)}</span>`             : '',
+        e.contratista        ? `<span>🏢 ${escapeHtml(e.contratista)}</span>`           : '',
+        e.valor_contrato     ? `<span>💰 $${Number(e.valor_contrato).toLocaleString('es-CO')}</span>` : '',
+        e.fecha_fin_estimada ? `<span>📅 Fin: ${e.fecha_fin_estimada}</span>`           : '',
+      ].filter(Boolean).join(' · ');
+
       const photosPreview = e.photos.length
-        ? `<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">${e.photos.slice(0, 4).map(p => `<img src="${p.data}" alt="${escapeHtml(p.name)}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">`).join('')}</div>`
+        ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${
+            e.photos.slice(0,4).map(p =>
+              `<img src="${p.data}" alt="${escapeHtml(p.name)}"
+                style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">`
+            ).join('')
+          }</div>`
         : '';
 
       el.innerHTML = `
         <div class="entry-header">
-          <div>
+          <div style="flex:1;min-width:0;">
             <div class="entry-title">Año ${e.year} ${badge}</div>
-            <div class="entry-meta">Creado: ${e.createdAt ? new Date(e.createdAt).toLocaleDateString('es-ES') : 'N/D'}</div>
+            ${metaHtml ? `<div class="entry-meta" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;">${metaHtml}</div>` : ''}
           </div>
           <div class="entry-buttons">
             <button type="button" class="publish" onclick="togglePublish(${e.id})">${e.published ? '👁️ Ocultar' : '👁️ Publicar'}</button>
@@ -152,8 +198,9 @@ async function loadEntries() {
             <button type="button" class="danger" onclick="deleteEntry(${e.id})">🗑️ Eliminar</button>
           </div>
         </div>
-        <div class="entry-text">${escapeHtml(e.text).replace(/\n/g, '<br>')}</div>
-        <div><small>📎 Documentos: ${e.documents.length} | 🖼️ Fotos: ${e.photos.length}</small></div>
+        ${barraHtml}
+        ${e.text ? `<div class="entry-text" style="margin-top:6px;">${escapeHtml(e.text).replace(/\n/g,'<br>')}</div>` : ''}
+        <div style="margin-top:6px;"><small>📎 ${e.documents.length} doc(s) | 🖼️ ${e.photos.length} foto(s) | Creado: ${e.createdAt ? new Date(e.createdAt).toLocaleDateString('es-ES') : 'N/D'}</small></div>
         ${photosPreview}
       `;
       entriesList.appendChild(el);
@@ -184,6 +231,20 @@ async function editEntry(entryId) {
     publishedCheckbox.checked = entry.published;
     editingId = entryId;
     editingEntry = entry;
+
+    // ── Poblar campos viales ──────────────────────────────────────────────
+    if (nombreProyectoInput) nombreProyectoInput.value  = entry.nombre_proyecto   || '';
+    if (tipoObraInput)       tipoObraInput.value        = entry.tipo_obra         || 'Vial';
+    if (estadoInput)         estadoInput.value          = entry.estado            || 'En ejecución';
+    if (avanceInput) {
+      avanceInput.value = entry.porcentaje_avance ?? 0;
+      if (avanceLabel) avanceLabel.textContent = (entry.porcentaje_avance ?? 0) + '%';
+    }
+    if (contratistaInput) contratistaInput.value  = entry.contratista       || '';
+    if (valorInput)       valorInput.value        = entry.valor_contrato    || '';
+    if (fechaInicioInput) fechaInicioInput.value  = entry.fecha_inicio      || '';
+    if (fechaFinInput)    fechaFinInput.value     = entry.fecha_fin_estimada|| '';
+
     entryForm.style.display = 'block';
 
     const docsNames = entry.documents.slice(0, 5).map(d => escapeHtml(d.name)).join(', ');
@@ -299,6 +360,16 @@ function resetForm(hideForm = true) {
   publishedCheckbox.checked = false;
   editAttachmentsInfo.style.display = 'none';
   editAttachmentsInfo.textContent = '';
+  // ── Limpiar campos viales ─────────────────────────────────────────────
+  if (nombreProyectoInput) nombreProyectoInput.value = '';
+  if (tipoObraInput)       tipoObraInput.value       = 'Vial';
+  if (estadoInput)         estadoInput.value         = 'En ejecución';
+  if (avanceInput) {       avanceInput.value         = 0; }
+  if (avanceLabel)         avanceLabel.textContent   = '0%';
+  if (contratistaInput)    contratistaInput.value    = '';
+  if (valorInput)          valorInput.value          = '';
+  if (fechaInicioInput)    fechaInicioInput.value    = '';
+  if (fechaFinInput)       fechaFinInput.value       = '';
 }
 
 entryForm.addEventListener('submit', async ev => {
@@ -343,6 +414,16 @@ entryForm.addEventListener('submit', async ev => {
     const body = {
       year,
       text,
+      // ── Campos viales ───────────────────────────────────────────────────
+      nombre_proyecto:    nombreProyectoInput?.value.trim()  || '',
+      tipo_obra:          tipoObraInput?.value               || 'Vial',
+      estado:             estadoInput?.value                 || 'En ejecución',
+      porcentaje_avance:  Number(avanceInput?.value)         || 0,
+      contratista:        contratistaInput?.value.trim()     || '',
+      valor_contrato:     Number(valorInput?.value)          || 0,
+      fecha_inicio:       fechaInicioInput?.value            || '',
+      fecha_fin_estimada: fechaFinInput?.value               || '',
+      // ── Campos originales ───────────────────────────────────────────────
       documents,
       photos,
       fileName: documents[0]?.name || null,

@@ -18,7 +18,7 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: linear-gradient(135deg, #f9f5f0 0%, #f5e6d3 100%);
       min-height: 100vh;
       padding: 20px;
     }
@@ -35,20 +35,38 @@
     .page-title {
       text-align: center;
       padding: 30px 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #D97373 0%, #B85555 100%);
       color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .page-title img.logo {
+      height: 90px;
+      width: auto;
+      filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));
+    }
+    
+    .page-title-content {
+      flex: 1;
+      min-width: 250px;
     }
     
     .page-title h1 {
       font-size: 42px;
       margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+      text-shadow: none;
+      color: #F4D35E;
     }
     
     .page-title p {
       font-size: 20px;
       font-weight: 300;
       opacity: 0.95;
+      color: #fff;
     }
 
     #mapa {
@@ -69,7 +87,7 @@
 
     .loading-spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
+      border-top: 4px solid #19aa86;
       border-radius: 50%;
       width: 50px;
       height: 50px;
@@ -89,7 +107,7 @@
 
     /* Estilo para el tooltip flotante */
     #mapHoverLabel {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
@@ -116,8 +134,11 @@
 
   <div class="container">
     <div class="page-title">
-      <h1>Nasa Kiwe</h1>
-      <p>Departamento del Cauca</p>
+      <img src="logo.png" alt="NASA KIWE" class="logo">
+      <div class="page-title-content">
+        <h1>Nasa Kiwe</h1>
+        <p>Departamento del Cauca</p>
+      </div>
     </div>
 
     <div id="mapa">
@@ -129,7 +150,9 @@
 
     <div class="info-panel">
       <h3>ℹ️ Información del mapa</h3>
-      <p>Haz clic en cualquier municipio para ver más detalles. Pasa el cursor sobre los municipios para ver su nombre.</p>
+      <p>Haz clic en cualquier municipio para ver más detalles. Pasa el cursor sobre los municipios para ver su nombre.
+        Este es un mapa interactivo del Departamento del Cauca, diseñado para mostrar información relevante sobre cada municipio. Utiliza las herramientas de zoom y desplazamiento para explorar diferentes áreas del mapa.
+      </p>
     </div>
   </div>
 

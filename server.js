@@ -115,10 +115,23 @@ function buildEntryPayload(body, existingEntry) {
     ? normalizeMediaList(body.photos, true)
     : normalizeStoredEntry(existingEntry).photos;
 
+  // ── Campos de proyecto vial ──────────────────────────────────────────────
+  const pct = Number(body.porcentaje_avance ?? existingEntry?.porcentaje_avance ?? 0);
+
   return {
     payload: {
       year,
       text,
+      // Campos viales nuevos
+      nombre_proyecto:    String(body.nombre_proyecto    || existingEntry?.nombre_proyecto    || '').trim(),
+      tipo_obra:          String(body.tipo_obra          || existingEntry?.tipo_obra          || 'Vial').trim(),
+      estado:             String(body.estado             || existingEntry?.estado             || 'En ejecución').trim(),
+      porcentaje_avance:  Math.min(100, Math.max(0, Number.isFinite(pct) ? pct : 0)),
+      contratista:        String(body.contratista        || existingEntry?.contratista        || '').trim(),
+      valor_contrato:     Number(body.valor_contrato     || existingEntry?.valor_contrato     || 0) || 0,
+      fecha_inicio:       String(body.fecha_inicio       || existingEntry?.fecha_inicio       || '').trim(),
+      fecha_fin_estimada: String(body.fecha_fin_estimada || existingEntry?.fecha_fin_estimada || '').trim(),
+      // Campos originales
       documents,
       photos,
       fileName: documents[0]?.name || null,
@@ -194,13 +207,21 @@ app.put('/api/admin/municipio/:dept/:id', (req, res) => {
     return res.status(400).json({ error: built.error });
   }
 
-  entry.year = built.payload.year;
-  entry.text = built.payload.text;
-  entry.documents = built.payload.documents;
-  entry.photos = built.payload.photos;
-  entry.fileName = built.payload.fileName;
-  entry.fileData = built.payload.fileData;
-  entry.published = built.payload.published;
+  entry.year              = built.payload.year;
+  entry.text              = built.payload.text;
+  entry.nombre_proyecto   = built.payload.nombre_proyecto;
+  entry.tipo_obra         = built.payload.tipo_obra;
+  entry.estado            = built.payload.estado;
+  entry.porcentaje_avance = built.payload.porcentaje_avance;
+  entry.contratista       = built.payload.contratista;
+  entry.valor_contrato    = built.payload.valor_contrato;
+  entry.fecha_inicio      = built.payload.fecha_inicio;
+  entry.fecha_fin_estimada= built.payload.fecha_fin_estimada;
+  entry.documents         = built.payload.documents;
+  entry.photos            = built.payload.photos;
+  entry.fileName          = built.payload.fileName;
+  entry.fileData          = built.payload.fileData;
+  entry.published         = built.payload.published;
 
   if (saveData(data)) {
     res.json({ success: true, entry });

@@ -58,27 +58,94 @@ const MIN_YEAR = 2000;
     const el = document.createElement('article');
     el.className = 'entry';
 
-    const docsHtml = entry.documents.length
-      ? `<div class="docs">${entry.documents.map(d => {
-          const safeName = escapeHtml(d.name);
-          return `<a href="${d.data}" download="${safeName}">📎 ${safeName}</a>`;
-        }).join('')}</div>`
-      : '<p class="empty">Sin documentos adjuntos.</p>';
+    // Color por estado
+    const colorEstado = {
+      'En ejecución': '#2563eb', 'Terminado': '#16a34a',
+      'Suspendido':   '#dc2626', 'En planeación': '#9333ea'
+    };
+    const col = colorEstado[entry.estado] || '#6b7280';
+    const pct = entry.porcentaje_avance ?? 0;
 
-    const photosHtml = entry.photos.length
-      ? `<div class="photo-grid">${entry.photos.map(p => {
-          const safeName = escapeHtml(p.name);
-          return `<a href="${p.data}" target="_blank" rel="noopener"><img src="${p.data}" alt="${safeName}"></a>`;
-        }).join('')}</div>`
-      : '<p class="empty">Sin fotos cargadas.</p>';
+    // Nombre del proyecto (usa nombre_proyecto o text como fallback)
+    const nombre = entry.nombre_proyecto || entry.text || 'Proyecto sin nombre';
+
+    // Barra de progreso
+    const barraHtml = `
+      <div style="margin:10px 0;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:#6b7280;">Avance de la obra</span>
+          <strong style="color:${col};">${pct}%</strong>
+        </div>
+        <div style="height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:5px;transition:width .4s;"></div>
+        </div>
+      </div>`;
+
+    // Tabla de datos clave
+    const filas = [
+      ['🔧 Tipo de obra',    entry.tipo_obra          || '—'],
+      ['🏢 Contratista',     entry.contratista         || '—'],
+      ['💰 Inversión',       entry.valor_contrato
+        ? '$' + Number(entry.valor_contrato).toLocaleString('es-CO')
+        : '—'],
+      ['📅 Fecha de inicio', entry.fecha_inicio         || '—'],
+      ['🏁 Fin estimado',    entry.fecha_fin_estimada   || '—'],
+    ];
+    const tablaHtml = `
+      <div style="background:#f8f9fa;border-radius:8px;padding:10px 14px;margin:10px 0;">
+        ${filas.map(([k,v]) => `
+          <div style="display:flex;justify-content:space-between;padding:5px 0;
+            border-bottom:0.5px solid #e5e7eb;font-size:13px;">
+            <span style="color:#6b7280;">${k}</span>
+            <span style="font-weight:500;color:#111;text-align:right;max-width:60%;">${escapeHtml(v)}</span>
+          </div>`).join('')}
+      </div>`;
+
+    // Fotos
+    const fotosHtml = (entry.photos || []).length
+      ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px;">
+          ${entry.photos.map(p =>
+            `<a href="${p.data}" target="_blank" rel="noopener">
+              <img src="${p.data}" alt="${escapeHtml(p.name)}"
+                style="width:100%;height:100px;object-fit:cover;border-radius:8px;
+                  border:0.5px solid #e5e7eb;display:block;">
+            </a>`
+          ).join('')}
+        </div>` : '';
+
+    // Documentos
+    const docsHtml = (entry.documents || []).length
+      ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+          ${entry.documents.map(d =>
+            `<a href="${d.data}" download="${escapeHtml(d.name)}"
+              style="font-size:12px;color:#2563eb;text-decoration:none;
+                padding:4px 10px;border:0.5px solid #bfdbfe;border-radius:6px;
+                background:#eff6ff;display:inline-flex;align-items:center;gap:4px;">
+              📎 ${escapeHtml(d.name)}
+            </a>`
+          ).join('')}
+        </div>` : '';
+
+    // Descripción adicional
+    const descHtml = entry.text && entry.text !== nombre
+      ? `<p style="font-size:13px;color:#6b7280;margin:8px 0;line-height:1.6;">
+          ${escapeHtml(entry.text).replace(/\n/g,'<br>')}
+        </p>` : '';
 
     el.innerHTML = `
-      <h4>Año ${entry.year}</h4>
-      <p>${escapeHtml(entry.text).replace(/\n/g, '<br>')}</p>
-      <div style="margin-top:10px;"><strong>Documentos</strong></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <h4 style="font-size:17px;color:#1e3a5f;margin:0;flex:1;">${escapeHtml(nombre)}</h4>
+        <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;
+          background:${col}20;color:${col};white-space:nowrap;flex-shrink:0;">
+          ${escapeHtml(entry.estado || 'Sin estado')}
+        </span>
+      </div>
+      <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Año ${entry.year}</div>
+      ${barraHtml}
+      ${tablaHtml}
+      ${descHtml}
+      ${fotosHtml}
       ${docsHtml}
-      <div style="margin-top:12px;"><strong>Fotos</strong></div>
-      ${photosHtml}
     `;
 
     return el;

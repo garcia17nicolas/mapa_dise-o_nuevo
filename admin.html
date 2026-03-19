@@ -5,35 +5,37 @@
   <title>Dashboard Admin - Municipios</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f9f5f0 0%, #f5e6d3 100%); min-height: 100vh; }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-    header h1 { font-size: 32px; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    header { background: linear-gradient(135deg, #D97373 0%, #B85555 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    header img.logo { height: 80px; width: auto; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2)); }
+    header .header-content { flex: 1; min-width: 250px; }
+    header h1 { font-size: 32px; margin-bottom: 8px; text-shadow: none; color: #F4D35E; }
     header p { font-size: 16px; opacity: 0.95; }
-    .controls { margin: 20px 0; }
+    .controls { margin: 20px 0; 
     .control-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
     input, select, textarea, button { padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
     select { flex: 1; min-width: 250px; background: white; }
-    button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; border: none; font-weight: 600; transition: all 0.3s; }
-    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    button.danger { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    button.danger:hover { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
-    button.publish { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    button.publish:hover { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); }
+    button { background: linear-gradient(135deg, #D97373 0%, #B85555 100%); color: white; cursor: pointer; border: none; font-weight: 600; transition: all 0.3s; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: linear-gradient(135deg, #B85555 0%, #9A4545 100%); }
+    button.danger { background: linear-gradient(135deg, #E88080 0%, #D96666 100%); }
+    button.danger:hover { background: linear-gradient(135deg, #D96666 0%, #E88080 100%); }
+    button.publish { background: linear-gradient(135deg, #F4D35E 0%, #ECC847 100%); color: #333; }
+    button.publish:hover { background: linear-gradient(135deg, #ECC847 0%, #E4BD30 100%); }
     .section { background: white; padding: 25px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    .section h2 { margin-bottom: 15px; border-bottom: 3px solid #667eea; padding-bottom: 12px; color: #667eea; font-size: 20px; text-align: center; }
+    .section h2 { margin-bottom: 15px; border-bottom: 3px solid #D97373; padding-bottom: 12px; color: #D97373; font-size: 20px; text-align: center; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
     textarea { width: 100%; min-height: 100px; resize: vertical; }
-    .entry { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 15px; margin-bottom: 12px; border-left: 4px solid #667eea; border-radius: 6px; }
+    .entry { background: linear-gradient(135deg, #fff9f7 0%, #ffebe0 100%); padding: 15px; margin-bottom: 12px; border-left: 4px solid #D97373; border-radius: 6px; }
     .entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .entry-title { font-weight: bold; font-size: 16px; color: #333; }
     .entry-meta { font-size: 12px; color: #666; margin-top: 4px; }
     .entry-buttons { display: flex; gap: 6px; }
     .entry-buttons button { padding: 6px 10px; font-size: 12px; }
     .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px; }
-    .badge.published { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #333; }
-    .badge.draft { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+    .badge.published { background: linear-gradient(135deg, #F4D35E 0%, #ECC847 100%); color: #333; font-weight: 700; }
+    .badge.draft { background: linear-gradient(135deg, #D97373 0%, #E8A8A8 100%); color: white; }
     .entry-text { margin: 10px 0; line-height: 1.6; color: #555; }
     .no-entries { color: #999; font-style: italic; text-align: center; padding: 20px; }
     .alert { padding: 12px; margin-bottom: 15px; border-radius: 6px; animation: slideIn 0.3s; }
@@ -45,9 +47,12 @@
 <body>
   <div class="container">
     <header>
-      <h1>📊 Panel Administrativo</h1>
-      <p>Gestiona la información de los municipios</p>
-      <p id="departmentName" style="margin-top: 8px; font-size: 18px; font-weight: 600;"></p>
+      <img src="logo.png" alt="NASA KIWE" class="logo">
+      <div class="header-content">
+        <h1>📊 Panel Administrativo</h1>
+        <p>Gestiona la información de los municipios</p>
+        <p id="departmentName" style="margin-top: 8px; font-size: 16px; font-weight: 500; color: #FFD700;"></p>
+      </div>
     </header>
 
     <div id="alert"></div>
@@ -74,8 +79,62 @@
           <input type="number" id="yearInput" min="2000" max="2100" required>
         </div>
         <div class="form-group">
-          <label>Descripción/Información:</label>
-          <textarea id="textInput" required></textarea>
+          <label>Nombre del proyecto / obra:</label>
+          <input type="text" id="nombreProyectoInput" placeholder="Ej: Rehabilitación vía El Patía - Mercaderes" required>
+        </div>
+        <div class="form-group" style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:180px;">
+            <label>Tipo de obra:</label>
+            <select id="tipoObraInput" style="width:100%;">
+              <option value="Vial">🛣️ Vial (carretera)</option>
+              <option value="Puente">🌉 Puente</option>
+              <option value="Peatonal">🚶 Sendero peatonal</option>
+              <option value="Infraestructura">🏗️ Infraestructura</option>
+              <option value="Otro">📌 Otro</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:180px;">
+            <label>Estado actual:</label>
+            <select id="estadoInput" style="width:100%;">
+              <option value="En planeación">📋 En planeación</option>
+              <option value="En ejecución">🔨 En ejecución</option>
+              <option value="Suspendido">⏸️ Suspendido</option>
+              <option value="Terminado">✅ Terminado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Avance de obra: <strong id="avanceLabel" style="color:#D97373;">0%</strong></label>
+          <input type="range" id="avanceInput" min="0" max="100" value="0" step="1"
+            style="width:100%; height:6px; accent-color:#D97373;"
+            oninput="document.getElementById('avanceLabel').textContent = this.value + '%'">
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:#999; margin-top:2px;">
+            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+          </div>
+        </div>
+        <div class="form-group" style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div style="flex:2; min-width:200px;">
+            <label>Contratista:</label>
+            <input type="text" id="contratistaInput" style="width:100%;" placeholder="Nombre de la empresa o persona contratista">
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <label>Valor del contrato ($):</label>
+            <input type="number" id="valorInput" style="width:100%;" min="0" placeholder="Ej: 500000000">
+          </div>
+        </div>
+        <div class="form-group" style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:160px;">
+            <label>Fecha de inicio:</label>
+            <input type="date" id="fechaInicioInput" style="width:100%;">
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <label>Fecha fin estimada:</label>
+            <input type="date" id="fechaFinInput" style="width:100%;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descripción / observaciones adicionales:</label>
+          <textarea id="textInput"></textarea>
         </div>
         <div class="form-group">
           <label>Documentos (PDF, DOC, XLS, etc.):</label>

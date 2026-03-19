@@ -14,7 +14,7 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: linear-gradient(135deg, #f9f5f0 0%, #f5e6d3 100%);
       min-height: 100vh;
       padding: 20px;
     }
@@ -29,20 +29,38 @@
     }
 
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #D97373 0%, #B85555 100%);
       color: white;
       padding: 40px 30px;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .header img.logo {
+      height: 80px;
+      width: auto;
+      filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));
+    }
+    
+    .header-content {
+      flex: 1;
+      min-width: 250px;
     }
 
     .header h1 {
       font-size: 34px;
       margin-bottom: 10px;
+      color: #F4D35E;
     }
 
     .header p {
       font-size: 18px;
-      opacity: 0.9;
+      opacity: 0.95;
+      color: #fff;
     }
 
     .content {
@@ -50,8 +68,8 @@
     }
 
     .info-card {
-      background: #f8f9fa;
-      border-left: 4px solid #667eea;
+      background: #fff9f7;
+      border-left: 4px solid #D97373;
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 8px;
@@ -72,17 +90,18 @@
     .back-button {
       display: inline-block;
       padding: 12px 24px;
-      background: #667eea;
+      background: linear-gradient(135deg, #D97373 0%, #B85555 100%);
       color: white;
       text-decoration: none;
       border-radius: 6px;
       font-weight: 600;
-      transition: background 0.3s;
+      transition: all 0.3s;
       margin-top: 20px;
     }
 
     .back-button:hover {
-      background: #5568d3;
+      background: linear-gradient(135deg, #B85555 0%, #9A4545 100%);
+      transform: translateY(-2px);
     }
 
     .filter-row {
@@ -101,11 +120,18 @@
     }
 
     button {
-      background: #667eea;
+      background: linear-gradient(135deg, #D97373 0%, #B85555 100%);
       color: white;
       cursor: pointer;
       border: none;
       font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      background: linear-gradient(135deg, #B85555 0%, #9A4545 100%);
     }
 
     .entry {
@@ -162,8 +188,11 @@
 
   <div class="container">
     <div class="header">
-      <h1 id="title">Cargando municipio...</h1>
-      <p>Departamento del Cauca</p>
+      <img src="logo.png" alt="NASA KIWE" class="logo">
+      <div class="header-content">
+        <h1 id="title">Cargando municipio...</h1>
+        <p>Departamento del Cauca</p>
+      </div>
     </div>
 
     <div class="content">
