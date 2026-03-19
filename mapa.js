@@ -174,12 +174,80 @@ console.log('✅ Highcharts detectado correctamente');
         
         data: caucaGeoJSON.features.map((f, i) => {
           const name = featureName(f);
+          
+          // Función para calcular el centroide de la geometría
+          function getCentroid(geometry) {
+            if (!geometry || !geometry.coordinates) return null;
+            
+            let sumLat = 0, sumLon = 0, count = 0;
+            
+            function extractCoords(coords, depth = 0) {
+              if (depth === 0 && Array.isArray(coords[0])) {
+                if (typeof coords[0][0] === 'number') {
+                  // Array de coordenadas
+                  coords.forEach(coord => {
+                    sumLon += coord[0];
+                    sumLat += coord[1];
+                    count++;
+                  });
+                } else {
+                  // Array de arrays (Polygon o MultiPolygon)
+                  coords.forEach(ring => extractCoords(ring, depth + 1));
+                }
+              }
+            }
+            
+            extractCoords(geometry.coordinates);
+            return count > 0 ? { lon: sumLon / count, lat: sumLat / count } : null;
+          }
+          
+          // Obtener centro del municipio
+          const center = getCentroid(f.geometry);
+          
+          // Nombres de municipios para clasificarlos manualmente si es necesario
+          const regionColors = {
+            // ORIENTE (Azul - #5DADE2)
+            oriente: '#5DADE2',
+            // OCCIDENTE (Verde - #58D68D)
+            occidente: '#58D68D',
+            // SUR (Amarillo - #F4D35E)
+            sur: '#F4D35E',
+            // CENTRO (Naranja - #F8A855)
+            centro: '#F8A855',
+            // NORTE (Rojo - #D97373)
+            norte: '#D97373'
+          };
+          
+          // Clasificar municipio por región según su nombre y coordenadas
+          let region = 'centro';
+          const munName = name.toUpperCase();
+          
+          // Clasificación basada en información proporcionada
+          const orienteMunicipios = ['CALDONO', 'INZÁ', 'JAMBALÓ', 'PÁEZ', 'PURACÉ', 'SILVIA', 'TORIBÍO', 'TOTORÓ'];
+          const occidenteMunicipios = ['GUAPI', 'LÓPEZ DE MICAY', 'TIMBIQUÍ'];
+          const surMunicipios = ['ALMAGUER', 'ARGELIA', 'BALBOA', 'BOLÍVAR', 'FLORENCIA', 'LA VEGA', 'MERCADERES', 'PATÍA', 'PIAMONTE', 'SAN SEBASTIÁN', 'SANTA ROSA', 'SUCRE'];
+          const centroMunicipios = ['CAJIBÍO', 'EL TAMBO', 'LA SIERRA', 'MORALES', 'PIENDAMÓ', 'POPAYÁN', 'ROSAS', 'SOTARÁ', 'TIMBÍO'];
+          const norteMunicipios = ['BUENOS AIRES', 'CALOTO', 'CORINTO', 'GUACHENÉ', 'MIRANDA', 'PADILLA', 'PUERTO TEJADA', 'SANTANDER DE QUILICHAO', 'SUÁREZ', 'VILLA RICA'];
+          
+          // Asignar región según municipio
+          if (orienteMunicipios.some(m => munName.includes(m))) {
+            region = 'oriente';
+          } else if (occidenteMunicipios.some(m => munName.includes(m))) {
+            region = 'occidente';
+          } else if (surMunicipios.some(m => munName.includes(m))) {
+            region = 'sur';
+          } else if (centroMunicipios.some(m => munName.includes(m))) {
+            region = 'centro';
+          } else if (norteMunicipios.some(m => munName.includes(m))) {
+            region = 'norte';
+          }
+          
           return {
             name: name,
             value: 0,
             properties: f.properties,
-            // Color alternado para mejor visualización
-            color: i % 2 === 0 ? '#d9eef6' : '#c5e1f5'
+            region: region,
+            color: regionColors[region]
           };
         }),
         
