@@ -2,6 +2,51 @@
 const API_BASE = 'http://localhost:3000/api';
 const MIN_YEAR = 2000;
 
+// ═══════════════════════════════════════════════════════════════════
+// ✅ VERIFICACIÓN DE AUTENTICACIÓN
+// ═══════════════════════════════════════════════════════════════════
+
+function checkAuth() {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  if (!token || !user) {
+    // Redirigir a login
+    window.location.href = 'login.html';
+    return false;
+  }
+
+  return { token, user };
+}
+
+// Verificar autenticación al cargar
+const auth = checkAuth();
+if (!auth) throw new Error('No autenticado');
+
+// Mostrar información del usuario
+document.getElementById('userInfo').textContent = auth.user.username;
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
+  }
+});
+
+// Función helper para hacer fetch con token
+async function fetchWithAuth(url, options = {}) {
+  const token = localStorage.getItem('token');
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    }
+  });
+}
+
 const municipioSelect = document.getElementById('municipioSelect');
 const newEntryBtn = document.getElementById('newEntryBtn');
 const newMunicipioBtn = document.getElementById('newMunicipioBtn');

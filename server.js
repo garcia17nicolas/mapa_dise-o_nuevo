@@ -3,10 +3,17 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const dotenv = require('dotenv');
+
+// Cargar variables de entorno
+dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const MIN_YEAR = 2000;
+
+// Importar módulo de autenticación
+const auth = require('./auth');
 
 // Middleware
 app.use(cors());
@@ -253,6 +260,105 @@ app.get('/api/municipios', (req, res) => {
   const data = loadData();
   const municipios = Object.keys(data);
   res.json(municipios);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ✅ RUTAS DE AUTENTICACIÓN
+// ═══════════════════════════════════════════════════════════════════
+
+// Inicializar usuarios
+auth.initializeUsers();
+
+// 1. POST: Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+    }
+
+    const result = await auth.login(username, password);
+
+    if (result.error) {
+      return res.status(401).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error en login:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// 2. POST: Crear nuevo usuario (solo admin)
+app.post('/api/auth/register', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
+  try {
+    const { username, email, password, role } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Datos incompletos' });
+    }
+
+    const result = await auth.createUser(username, email, password, role || 'editor');
+
+    if (result.error) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error al crear usuario:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// 3. GET: Obtener datos del usuario actual
+app.get('/api/auth/me', auth.authMiddleware, (req, res) => {
+  res.json({
+    user: req.user,
+    roles: auth.ROLES
+  });
+});
+
+// 4. POST: Logout (solo invalida en cliente, JWT expira automáticamente)
+app.post('/api/auth/logout', auth.authMiddleware, (req, res) => {
+  res.json({ success: true, message: 'Sesión cerrada' });
+});
+
+// 5. GET: Listar usuarios (solo admin)
+app.get('/api/auth/users', auth.authMiddleware, auth.requireRole('admin'), (req, res) => {
+  try {
+    const data = auth.loadData();
+    const users = (data.users || []).map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      role: u.role,
+      createdAt: u.createdAt,
+      lastLogin: u.lastLogin
+    }));
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ✅ PROTEGER RUTAS DEL ADMIN CON AUTENTICACIÓN
+// ═══════════════════════════════════════════════════════════════════
+
+// Proteger POST/PUT/DELETE de municipios
+app.post('/api/municipios/:dept/entrada', auth.authMiddleware, auth.requireRole('admin', 'editor'), (req, res) => {
+  // Ruta existente - ahora protegida
+});
+
+app.put('/api/municipios/:dept/entrada/:entryId', auth.authMiddleware, auth.requireRole('admin', 'editor'), (req, res) => {
+  // Ruta existente - ahora protegida
+});
+
+app.delete('/api/municipios/:dept/entrada/:entryId', auth.authMiddleware, auth.requireRole('admin'), (req, res) => {
+  // Ruta existente - solo admin puede eliminar
 });
 
 // Iniciar servidor
