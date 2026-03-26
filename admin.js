@@ -244,7 +244,7 @@ async function loadMunicipios() {
 async function loadEntries() {
   const dept = getSelectedDept();
   if (!dept) {
-    entriesList.innerHTML = '<p class="no-entries">Selecciona un municipio</p>';
+    entriesList.innerHTML = '<p class="no-entries">🏘️ Selecciona un municipio para ver sus entradas</p>';
     return;
   }
 
@@ -254,9 +254,18 @@ async function loadEntries() {
 
     entriesList.innerHTML = '';
     if (entries.length === 0) {
-      entriesList.innerHTML = '<p class="no-entries">Sin entradas</p>';
+      entriesList.innerHTML = '<p class="no-entries">📭 No hay entradas publicadas para <strong>' + escapeHtml(dept) + '</strong>. <br><small>Crea una nueva haciendo click en "+ Nueva Entrada"</small></p>';
       return;
     }
+
+    // Mostrar header con nombre y contador
+    const header = document.createElement('div');
+    header.style.cssText = 'margin-bottom:20px; padding-bottom:15px; border-bottom: 2px solid #D97373;';
+    header.innerHTML = `
+      <h3 style="color:#D97373; margin-bottom:8px; font-size:18px;">📍 ${escapeHtml(dept)}</h3>
+      <p style="color:#666; font-size:13px; margin:0;">Total: <strong style="color:#D97373;">${entries.length}</strong> entrada${entries.length !== 1 ? 's' : ''} registrada${entries.length !== 1 ? 's' : ''}</p>
+    `;
+    entriesList.appendChild(header);
 
     entries.forEach(e => {
       const el = document.createElement('div');
@@ -307,18 +316,22 @@ async function loadEntries() {
       el.innerHTML = `
         <div class="entry-header">
           <div style="flex:1;min-width:0;">
-            <div class="entry-title">Año ${e.year} ${badge}</div>
-            ${metaHtml ? `<div class="entry-meta" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;">${metaHtml}</div>` : ''}
+            <div class="entry-title">📋 Año ${e.year} ${badge}</div>
+            ${e.nombre_proyecto ? `<div style="margin-top:6px; font-weight:600; color:#D97373; font-size:14px;">${escapeHtml(e.nombre_proyecto)}</div>` : ''}
+            ${metaHtml ? `<div class="entry-meta" style="margin-top:6px; font-size:13px; color:#666;">${metaHtml}</div>` : ''}
           </div>
           <div class="entry-buttons">
-            <button type="button" class="publish" onclick="togglePublish(${e.id})">${e.published ? '👁️ Ocultar' : '👁️ Publicar'}</button>
-            <button type="button" onclick="editEntry(${e.id})">✏️ Editar</button>
-            <button type="button" class="danger" onclick="deleteEntry(${e.id})">🗑️ Eliminar</button>
+            <button type="button" onclick="togglePublish(${e.id})" title="${e.published ? 'Ocultar del público' : 'Publicar al público'}">${e.published ? '👁️ Ocultar' : '👁️ Publicar'}</button>
+            <button type="button" onclick="editEntry(${e.id})" title="Editar esta entrada">✏️ Editar</button>
+            <button type="button" onclick="deleteEntry(${e.id})" title="Eliminar esta entrada">🗑️ Eliminar</button>
           </div>
         </div>
         ${barraHtml}
-        ${e.text ? `<div class="entry-text" style="margin-top:6px;">${escapeHtml(e.text).replace(/\n/g,'<br>')}</div>` : ''}
-        <div style="margin-top:6px;"><small>📎 ${e.documents.length} doc(s) | 🖼️ ${e.photos.length} foto(s) | Creado: ${e.createdAt ? new Date(e.createdAt).toLocaleDateString('es-ES') : 'N/D'}</small></div>
+        ${e.text ? `<div class="entry-text">${escapeHtml(e.text).replace(/\n/g,'<br>')}</div>` : ''}
+        <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(217,115,115,0.2); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#999; flex-wrap:wrap; gap:10px;">
+          <div>📎 ${e.documents.length} doc(s)  •  🖼️ ${e.photos.length} foto(s)</div>
+          <div>${e.createdAt ? new Date(e.createdAt).toLocaleDateString('es-ES') : 'N/D'}</div>
+        </div>
         ${photosPreview}
       `;
       entriesList.appendChild(el);
