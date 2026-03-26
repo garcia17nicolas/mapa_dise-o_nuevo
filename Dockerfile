@@ -1,18 +1,18 @@
-FROM node:24-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar archivos de configuración
-COPY package*.json ./
+# Copiar package.json
+COPY package.json .
 
 # Instalar dependencias
-RUN npm ci --only=production
+RUN npm install --production
 
-# Copiar código y assets
+# Copiar resto del código
 COPY . .
 
-# Exponer puerto (Railway lo asignará)
+# Exponer puerto
 EXPOSE 3000
 
 # Iniciar servidor
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
