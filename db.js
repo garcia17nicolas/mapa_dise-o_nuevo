@@ -1,16 +1,20 @@
 const { Pool } = require('pg');
 
 // Conexión a PostgreSQL
+console.log('🔗 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurada' : '❌ NO configurada');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  connectionString: process.env.DATABASE_URL || 'postgresql://localhost/mapa',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // Manejador de errores
 pool.on('error', (err) => {
-  console.error('Error no manejado en pool:', err);
+  console.error('❌ Error no manejado en pool:', err.message);
+});
+
+pool.on('connect', () => {
+  console.log('✅ Conexión a PostgreSQL establecida');
 });
 
 // Función para ejecutar queries
@@ -19,10 +23,10 @@ const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Query ejecutada:', { text, duration, rows: res.rowCount });
+    console.log('✓ Query ejecutada en', duration, 'ms:', res.rowCount, 'filas');
     return res;
   } catch (error) {
-    console.error('Error en query:', error);
+    console.error('❌ Error en query:', error.message);
     throw error;
   }
 };
@@ -30,6 +34,12 @@ const query = async (text, params) => {
 // Crear tablas si no existen
 const initializeTables = async () => {
   try {
+    // Dropear tabla entradas si existe (para corregir tipo LONGTEXT)
+    try {
+      await query(`DROP TABLE IF EXISTS entradas CASCADE`);
+      console.log('🔄 Tabla entradas limpiada');
+    } catch(e) {}
+
     // Tabla de usuarios
     await query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -61,7 +71,7 @@ const initializeTables = async () => {
         year INT,
         text TEXT,
         fileName VARCHAR(255),
-        fileData LONGTEXT,
+        fileData TEXT,
         published BOOLEAN DEFAULT true,
         createdAt TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
