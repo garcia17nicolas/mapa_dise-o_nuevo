@@ -310,7 +310,7 @@ async function togglePublish(entryId) {
     const entry = await getEntryById(dept, entryId);
     if (!entry) return;
 
-    const update = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
+    const update = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -322,14 +322,15 @@ async function togglePublish(entryId) {
     });
 
     if (update.ok) {
-      showAlert(entry.published ? 'Entrada ocultada del público' : 'Entrada publicada');
+      showAlert(entry.published ? 'Entrada ocultada del público' : 'Entrada publicada ✅');
       loadEntries();
     } else {
-      showAlert('No se pudo cambiar el estado de publicación', 'error');
+      const err = await update.json().catch(() => ({}));
+      showAlert(err.error || 'No se pudo cambiar el estado de publicación', 'error');
     }
   } catch (err) {
     console.error('Error publicando:', err);
-    showAlert('Error al cambiar publicación', 'error');
+    showAlert('Error al cambiar publicación: ' + err.message, 'error');
   }
 }
 
@@ -528,4 +529,102 @@ window.editEntry = editEntry;
 window.togglePublish = togglePublish;
 window.deleteEntry = deleteEntry;
 
+// ═══════════════════════════════════════════════════════════════════
+// 👥 GESTIÓN DE USUARIOS (Solo para Admin)
+// ═══════════════════════════════════════════════════════════════════
+
+if (auth.user.role === 'admin') {
+  document.getElementById('usersSection').style.display = 'block';
+}
+
+document.getElementById('toggleNewUserForm').addEventListener('click', () => {
+  const form = document.getElementById('newUserForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('cancelNewUserBtn').addEventListener('click', () => {
+  document.getElementById('newUserForm').style.display = 'none';
+  document.getElementById('newUserForm').reset();
+});
+
+document.getElementById('createUserBtn').addEventListener('click', async () => {
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role = document.getElementById('newUserRole').value;
+
+  if (!username || !password) {
+    showAlert('Usuario y contraseña son requeridos', 'error');
+    return;
+  }
+
+  if (password.length < 4) {
+    showAlert('La contraseña debe tener al menos 4 caracteres', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      showAlert(`✅ Usuario "${username}" creado exitosamente con rol ${role}`);
+      document.getElementById('newUserForm').reset();
+      document.getElementById('newUserForm').style.display = 'none';
+      loadUsersList();
+    } else {
+      const err = await res.json();
+      showAlert(err.error || 'Error al crear usuario', 'error');
+    }
+  } catch (err) {
+    console.error('Error creando usuario:', err);
+    showAlert('Error al crear usuario: ' + err.message, 'error');
+  }
+});
+
+async function loadUsersList() {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/auth/users`);
+    if (!res.ok) throw new Error('No autorizado');
+
+    const users = await res.json();
+    const usersList = document.getElementById('usersList');
+
+    if (!Array.isArray(users) || users.length === 0) {
+      usersList.innerHTML = '<p class="no-entries">No hay usuarios adicionales</p>';
+      return;
+    }
+
+    usersList.innerHTML = '<h3 style="margin-bottom:12px;">Usuarios Existentes:</h3>';
+    users.forEach(u => {
+      const div = document.createElement('div');
+      div.className = 'entry';
+      div.style.background = u.role === 'admin' ? '#fef3c7' : '#f3f4f6';
+      
+      const roleEmoji = {
+        'admin': '🔑', 'editor': '✏️', 'revisor': '👁️'
+      };
+
+      div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>${escapeHtml(u.username)}</strong>
+            <span class="badge ${u.role === 'admin' ? 'published' : 'draft'}" style="margin-left:8px;">
+              ${roleEmoji[u.role] || '•'} ${u.role}
+            </span>
+          </div>
+          <small style="color:#666;">Creado: ${new Date(u.createdAt).toLocaleDateString()}</small>
+        </div>
+      `;
+      usersList.appendChild(div);
+    });
+  } catch (err) {
+    console.error('Error cargando usuarios:', err);
+  }
+}
+
 loadMunicipios();
+loadUsersList();

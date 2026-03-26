@@ -64,6 +64,42 @@
 
     <div id="alert"></div>
 
+    <!-- SECCIÓN PARA GESTIONAR USUARIOS (Solo si es Admin) -->
+    <div id="usersSection" class="section" style="display:none; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);">
+      <h2>👥 Gestionar Perfiles / Usuarios</h2>
+      <div class="controls">
+        <button id="toggleNewUserForm" type="button" class="publish">+ Crear Nuevo Usuario</button>
+      </div>
+
+      <form id="newUserForm" style="display:none; background:#fff; padding:20px; border-radius:8px; margin-bottom:20px; border:2px solid #F4D35E;">
+        <h3 style="color:#D97373; margin-bottom:15px;">Nuevo Usuario</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px;">
+          <div class="form-group">
+            <label>Nombre de usuario:</label>
+            <input type="text" id="newUsername" placeholder="ej: editor1" required>
+          </div>
+          <div class="form-group">
+            <label>Contraseña:</label>
+            <input type="password" id="newPassword" placeholder="contraseña segura" required>
+          </div>
+          <div class="form-group">
+            <label>Rol:</label>
+            <select id="newUserRole" style="width:100%;">
+              <option value="revisor">👁️ Revisor (solo lectura)</option>
+              <option value="editor">✏️ Editor (crear/editar)</option>
+              <option value="admin">🔑 Admin (acceso total)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+          <button type="button" id="createUserBtn" class="publish">✅ Crear Usuario</button>
+          <button type="button" id="cancelNewUserBtn" style="background:#ccc; color:#333;">❌ Cancelar</button>
+        </div>
+      </form>
+
+      <div id="usersList"></div>
+    </div>
+
     <div class="section">
       <h2>📝 Crear/Editar Entrada</h2>
       <div class="controls">
