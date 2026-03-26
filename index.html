@@ -141,6 +141,15 @@
       </div>
     </div>
 
+    <!-- FILTRO POR AÑO -->
+    <div style="background: linear-gradient(135deg, #F4D35E 0%, #ECC847 100%); padding: 20px; text-align: center; border-bottom: 3px solid #D97373;">
+      <label for="yearSlider" style="font-weight: 600; color: #333; margin-right: 15px; display: inline-block;">
+        📅 Filtrar por Año:
+      </label>
+      <input type="range" id="yearSlider" min="2000" max="2030" value="2026" style="width: 300px; max-width: 90%; cursor: pointer;">
+      <span id="yearDisplay" style="margin-left: 15px; font-weight: 700; color: #D97373; font-size: 18px;">2026</span>
+    </div>
+
     <div id="mapa">
       <div class="loading" id="loading">
         <div class="loading-spinner"></div>

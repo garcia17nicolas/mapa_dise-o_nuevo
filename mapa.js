@@ -373,6 +373,147 @@ console.log('✅ Highcharts detectado correctamente');
     console.log('✅ Mapa cargado exitosamente con', caucaGeoJSON.features.length, 'municipios');
     console.log('🎉 Todo funcionando correctamente!');
 
+    // ===== CARGAR ENTRADAS Y FILTRAR POR AÑO =====
+    let allEntries = [];
+    let availableYears = [];
+    
+    // Función para cargar todas las entradas de todos los municipios
+    async function loadAllEntries() {
+      console.log('📥 Cargando entradas de todos los municipios...');
+      
+      const municipios = chart.series[0].data;
+      allEntries = [];
+      
+      for (const municipio of municipios) {
+        try {
+          const response = await fetch(`/api/municipio/${encodeURIComponent(municipio.name)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              data.forEach(entry => {
+                allEntries.push({
+                  municipio: municipio.name,
+                  ...entry
+                });
+              });
+            }
+          }
+        } catch (e) {
+          console.warn(`⚠️ Error cargando entradas de ${municipio.name}:`, e);
+        }
+      }
+      
+      console.log('✅ Total de entradas cargadas:', allEntries.length);
+      extractYears();
+    }
+    
+    // Función para extraer años únicos de las entradas
+    function extractYears() {
+      const yearsSet = new Set();
+      
+      allEntries.forEach(entry => {
+        if (entry.year) {
+          yearsSet.add(parseInt(entry.year));
+        } else if (entry.createdAt) {
+          const year = new Date(entry.createdAt).getFullYear();
+          yearsSet.add(year);
+        }
+      });
+      
+      availableYears = Array.from(yearsSet).sort((a, b) => a - b);
+      
+      if (availableYears.length > 0) {
+        const minYear = Math.min(...availableYears);
+        const maxYear = Math.max(...availableYears);
+        const yearSlider = document.getElementById('yearSlider');
+        
+        yearSlider.min = minYear;
+        yearSlider.max = maxYear;
+        yearSlider.value = maxYear;
+        document.getElementById('yearDisplay').textContent = maxYear;
+        
+        console.log('📅 Años disponibles:', availableYears, 'Rango:', minYear, '-', maxYear);
+      }
+      
+      updateMapColors(parseInt(document.getElementById('yearSlider').value));
+    }
+    
+    // Función para actualizar los colores del mapa según el año
+    function updateMapColors(selectedYear) {
+      console.log('🎨 Actualizando colores para año:', selectedYear);
+      
+      // Contar entradas por municipio para el año seleccionado
+      const entriesByMunicipio = {};
+      const municipios = chart.series[0].data;
+      
+      // Inicializar contador
+      municipios.forEach(m => {
+        entriesByMunicipio[m.name] = 0;
+      });
+      
+      // Contar entradas del año seleccionado
+      allEntries.forEach(entry => {
+        const entryYear = entry.year ? parseInt(entry.year) : null;
+        if (entryYear === selectedYear) {
+          entriesByMunicipio[entry.municipio]++;
+        }
+      });
+      
+      // Actualizar colores basados en cantidad de entradas
+      municipios.forEach(punto => {
+        const count = entriesByMunicipio[punto.name] || 0;
+        
+        // Definir color basado en cantidad
+        let newColor = punto.color || '#d9eef6';
+        
+        if (count === 0) {
+          // Sin entradas: color gris suave
+          newColor = '#e8e8e8';
+        } else if (count === 1) {
+          // 1 entrada: amarillo claro (F4D35E)
+          newColor = '#FFE082';
+        } else if (count <= 3) {
+          // 2-3 entradas: amarillo medio
+          newColor = '#FDD835';
+        } else if (count <= 5) {
+          // 4-5 entradas: naranja
+          newColor = '#FB8C00';
+        } else if (count <= 10) {
+          // 6-10 entradas: rojo-naranja
+          newColor = '#F4511E';
+        } else {
+          // > 10 entradas: rojo intenso (D97373)
+          newColor = '#D97373';
+        }
+        
+        punto.update({ color: newColor });
+      });
+      
+      // Actualizar tooltip de información
+      updateChartInfo(selectedYear, entriesByMunicipio);
+    }
+    
+    // Función para actualizar información del mapa
+    function updateChartInfo(year, entriesByMunicipio) {
+      const totalEntries = Object.values(entriesByMunicipio).reduce((a, b) => a + b, 0);
+      const municipiosConDatos = Object.values(entriesByMunicipio).filter(c => c > 0).length;
+      
+      console.log(`📊 Año ${year}: ${totalEntries} entradas en ${municipiosConDatos} municipios`);
+    }
+    
+    // Event listener del slider de años
+    const yearSlider = document.getElementById('yearSlider');
+    if (yearSlider) {
+      yearSlider.addEventListener('input', function() {
+        const year = parseInt(this.value);
+        document.getElementById('yearDisplay').textContent = year;
+        updateMapColors(year);
+      });
+    }
+    
+    // Cargar todas las entradas al iniciar
+    await loadAllEntries();
+
   } catch (err) {
     console.error('❌ Error inicializando mapa:', err);
     showError(err.message);
