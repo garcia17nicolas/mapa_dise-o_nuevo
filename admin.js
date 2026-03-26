@@ -185,7 +185,7 @@ async function loadEntries() {
 
     entriesList.innerHTML = '';
     if (entries.length === 0) {
-      entriesList.innerHTML = '<p class="no-entries">📭 No hay entradas publicadas para <strong>' + escapeHtml(dept) + '</strong>. <br><small>Crea una nueva haciendo click en "+ Nueva Entrada"</small></p>';
+      entriesList.innerHTML = '<p class="no-entries">📭 No hay entradas para <strong>' + escapeHtml(dept) + '</strong>. <br><small>Crea una nueva haciendo click en "+ Nueva Entrada"</small></p>';
       return;
     }
 
