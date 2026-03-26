@@ -382,6 +382,47 @@ app.get('/api/auth/users', auth.authMiddleware, auth.requireRole('admin'), async
   }
 });
 
+// 6. POST: Cambiar contraseña (autenticado)
+app.post('/api/auth/change-password', auth.authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Se requieren ambas contraseñas' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Obtener usuario actual
+    const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verificar contraseña actual
+    const isValid = await auth.verifyPassword(currentPassword, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+
+    // Hash de la nueva contraseña
+    const hashedPassword = await auth.hashPassword(newPassword);
+
+    // Actualizar contraseña
+    await db.query('UPDATE users SET password = $1, updatedAt = CURRENT_TIMESTAMP WHERE id = $2', [hashedPassword, userId]);
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    console.error('Error cambiando contraseña:', err);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════
 // ✅ PROTEGER RUTAS DEL ADMIN CON AUTENTICACIÓN
 // ═══════════════════════════════════════════════════════════════════

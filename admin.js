@@ -26,6 +26,79 @@ if (!auth) throw new Error('No autenticado');
 // Mostrar información del usuario
 document.getElementById('userInfo').textContent = auth.user.username;
 
+// ═══════════════════════════════════════════════════════════════════
+// PERFIL Y CAMBIO DE CONTRASEÑA
+// ═══════════════════════════════════════════════════════════════════
+
+const profileModal = document.getElementById('profileModal');
+const profileBtn = document.getElementById('profileBtn');
+const closeProfileModal = document.getElementById('closeProfileModal');
+const changePasswordForm = document.getElementById('changePasswordForm');
+const profileAlert = document.getElementById('profileAlert');
+
+profileBtn.addEventListener('click', () => {
+  document.getElementById('profileUsername').textContent = auth.user.username;
+  document.getElementById('profileRole').textContent = auth.user.role.toUpperCase();
+  profileModal.classList.add('active');
+  profileAlert.innerHTML = '';
+});
+
+closeProfileModal.addEventListener('click', () => {
+  profileModal.classList.remove('active');
+  changePasswordForm.reset();
+  profileAlert.innerHTML = '';
+});
+
+profileModal.addEventListener('click', (e) => {
+  if (e.target === profileModal) {
+    profileModal.classList.remove('active');
+  }
+});
+
+changePasswordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  
+  if (newPassword.length < 6) {
+    profileAlert.innerHTML = '<div class="alert error">La nueva contraseña debe tener al menos 6 caracteres</div>';
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    profileAlert.innerHTML = '<div class="alert error">Las contraseñas no coinciden</div>';
+    return;
+  }
+  
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword
+      })
+    });
+    
+    if (res.ok) {
+      profileAlert.innerHTML = '<div class="alert success">✅ Contraseña cambiada exitosamente</div>';
+      changePasswordForm.reset();
+      setTimeout(() => {
+        profileModal.classList.remove('active');
+        profileAlert.innerHTML = '';
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      profileAlert.innerHTML = `<div class="alert error">${err.error || 'Error al cambiar la contraseña'}</div>`;
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    profileAlert.innerHTML = `<div class="alert error">Error: ${err.message}</div>`;
+  }
+});
+
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
   if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
@@ -628,3 +701,11 @@ async function loadUsersList() {
 
 loadMunicipios();
 loadUsersList();
+
+// Auto-seleccionar y cargar el primer municipio si hay
+setTimeout(() => {
+  if (municipioSelect.options.length > 1) {
+    municipioSelect.selectedIndex = 1; // El índice 0 es "-- Selecciona un municipio --"
+    municipioSelect.dispatchEvent(new Event('change'));
+  }
+}, 500);

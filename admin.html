@@ -42,6 +42,8 @@
     @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .alert.success { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #333; border-left: 4px solid #4CAF50; }
     .alert.error { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; border-left: 4px solid #f44336; }
+    #profileModal { display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+    #profileModal.active { display: flex !important; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
@@ -58,6 +60,7 @@
           <small style="color: #fff; opacity: 0.8;">Usuario:</small>
           <p id="userInfo" style="color: #F4D35E; font-weight: 600; margin: 0;"></p>
         </div>
+        <button id="profileBtn" type="button" style="background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%); padding: 8px 16px; font-size: 13px;">⚙️ Perfil</button>
         <button id="logoutBtn" type="button" style="background: linear-gradient(135deg, #E88080 0%, #D96666 100%); padding: 8px 16px; font-size: 13px;">🚪 Cerrar Sesión</button>
       </div>
     </header>
@@ -208,6 +211,43 @@
     <div class="section">
       <h2>📋 Entradas del Municipio</h2>
       <div id="entriesList" style="min-height:100px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE PERFIL Y CAMBIO DE CONTRASEÑA -->
+  <div id="profileModal">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:450px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <h2 style="color:#D97373; margin-bottom:20px; text-align:center;">⚙️ Configuración de Perfil</h2>
+      
+      <div style="background:#f9f5f0; padding:15px; border-radius:8px; margin-bottom:20px;">
+        <p style="color:#666; font-size:14px;"><strong>Usuario:</strong> <span id="profileUsername" style="color:#D97373;"></span></p>
+        <p style="color:#666; font-size:14px; margin-top:8px;"><strong>Rol:</strong> <span id="profileRole" style="color:#D97373;"></span></p>
+      </div>
+
+      <form id="changePasswordForm" style="margin-bottom:20px;">
+        <div class="form-group">
+          <label style="color:#333; font-weight:600;">Contraseña actual:</label>
+          <input type="password" id="currentPassword" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+        </div>
+
+        <div class="form-group">
+          <label style="color:#333; font-weight:600;">Nueva contraseña:</label>
+          <input type="password" id="newPassword" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+          <small style="color:#999; display:block; margin-top:5px;">Mínimo 6 caracteres</small>
+        </div>
+
+        <div class="form-group">
+          <label style="color:#333; font-weight:600;">Confirmar nueva contraseña:</label>
+          <input type="password" id="confirmPassword" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="submit" style="flex:1; background:linear-gradient(135deg, #D97373 0%, #B85555 100%); color:white; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">💾 Cambiar Contraseña</button>
+          <button type="button" id="closeProfileModal" style="flex:1; background:#ccc; color:#333; padding:10px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">❌ Cancelar</button>
+        </div>
+      </form>
+
+      <div id="profileAlert"></div>
     </div>
   </div>
 
