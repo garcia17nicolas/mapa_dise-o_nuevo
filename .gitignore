@@ -1,37 +1,5 @@
 # Dependencies
-# Dependencias
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Archivos de entorno (NUNCA subirlos)
-.env
-.env.local
-.env.*.local
-
-# Sistema operativo
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-
-# IDEs
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-
-# Runtime
-dist/
-build/
-.cache/
-
-# Datos sensibles
-data.json
-*.backup
-*.tmp/
 
 # Runtime logs
 npm-debug.log*
