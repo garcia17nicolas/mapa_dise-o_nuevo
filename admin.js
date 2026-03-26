@@ -357,21 +357,10 @@ async function togglePublish(entryId) {
     const newStatus = !entry.published;
     console.log('Estado actual:', entry.published, '→ Nuevo estado:', newStatus);
 
-    // Construir objeto minimalista para solo cambiar published
-    // No incluir documents/photos directamente para evitar problemas de normalización
+    // Construir objeto minimalista - SOLO published
+    // El servidor usará existingEntry para todos los otros campos
     const updateData = {
-      year: entry.year,
-      text: entry.text,
-      published: newStatus,
-      nombre_proyecto: entry.nombre_proyecto,
-      tipo_obra: entry.tipo_obra,
-      estado: entry.estado,
-      porcentaje_avance: entry.porcentaje_avance,
-      contratista: entry.contratista,
-      valor_contrato: entry.valor_contrato,
-      fecha_inicio: entry.fecha_inicio,
-      fecha_fin_estimada: entry.fecha_fin_estimada
-      // No enviar documents/photos para evitar que se reprocessen
+      published: newStatus
     };
 
     console.log('Enviando actualización:', updateData);

@@ -130,6 +130,18 @@ function normalizeStoredEntry(entry) {
 }
 
 function buildEntryPayload(body, existingEntry) {
+  // Si SOLO se envía published (operación de toggle), preserva todo lo demás
+  const isToggleOnly = Object.keys(body).length === 1 && body.published !== undefined;
+  
+  if (isToggleOnly) {
+    return {
+      payload: {
+        ...existingEntry,
+        published: !!body.published
+      }
+    };
+  }
+
   const rawYear = body.year !== undefined ? body.year : existingEntry?.year;
   const year = Number(rawYear);
   const text = String(body.text !== undefined ? body.text : (existingEntry?.text || '')).trim();
