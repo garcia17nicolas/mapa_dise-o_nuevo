@@ -14,23 +14,69 @@ const MIN_YEAR = 2000;
 // Importar módulos
 const auth = require('./auth');
 const db = require('./db');
+const fs = require('fs');
+
+// Inicializar base de datos
+let dbReady = false;
+db.initializeTables()
+  .then(async () => {
+    dbReady = true;
+    console.log('✅ Base de datos lista');
+    
+    // Auto-migrar si no existe el usuario admin
+    const adminUser = await db.getUserByUsername('admin');
+    if (!adminUser) {
+      console.log('🔄 Migrando datos automáticamente...');
+      try {
+        const dataPath = path.join(__dirname, 'data.json');
+        if (fs.existsSync(dataPath)) {
+          const rawData = fs.readFileSync(dataPath, 'utf-8');
+          const data = JSON.parse(rawData);
+          
+          // Mapping de regiones
+          const regionColors = {
+            'NORTE': '#D97373', 'SUR': '#F4D35E', 'ORIENTE': '#58D68D',
+            'OCCIDENTE': '#5DADE2', 'CENTRO': '#E8B4B8'
+          };
+          const municipioToRegion = { 'INZÁ': 'CENTRO', 'EL TAMBO': 'NORTE', 'PÁEZ': 'SUR' };
+          
+          // Migrar municipios
+          for (const [municipioNombre, entradas] of Object.entries(data)) {
+            const region = municipioToRegion[municipioNombre] || 'CENTRO';
+            const color = regionColors[region];
+            await db.saveMunicipio(municipioNombre, region, color);
+          }
+          
+          // Migrar entradas
+          for (const [municipioNombre, entradas] of Object.entries(data)) {
+            if (Array.isArray(entradas)) {
+              for (const entrada of entradas) {
+                try {
+                  await db.saveEntrada(municipioNombre, entrada);
+                } catch(e) {}
+              }
+            }
+          }
+          
+          // Crear admin
+          const hashedPassword = await auth.hashPassword('admin123');
+          await db.saveUser('admin', hashedPassword, 'admin');
+          console.log('✅ Migración completada. Usuario admin: admin/admin123');
+        }
+      } catch(err) {
+        console.error('⚠️ Migración automática falló:', err.message);
+      }
+    }
+  })
+  .catch(err => {
+    console.error('❌ Error al inicializar BD:', err);
+  });
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname)); // Servir archivos estáticos
-
-// Inicializar base de datos
-let dbReady = false;
-db.initializeTables()
-  .then(() => {
-    dbReady = true;
-    console.log('✅ Base de datos lista');
-  })
-  .catch(err => {
-    console.error('❌ Error al inicializar BD:', err);
-  });
 
 // Middleware para verificar BD
 app.use((req, res, next) => {
