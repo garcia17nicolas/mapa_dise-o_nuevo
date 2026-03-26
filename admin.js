@@ -180,7 +180,12 @@ async function loadEntries() {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
+    const res = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
     const entries = (await res.json()).map(normalizeEntry).sort((a, b) => Number(b.year) - Number(a.year));
 
     entriesList.innerHTML = '';
@@ -274,7 +279,10 @@ async function loadEntries() {
 }
 
 async function getEntryById(dept, entryId) {
-  const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
+  const res = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}`);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  }
   const entries = (await res.json()).map(normalizeEntry);
   return entries.find(e => Number(e.id) === Number(entryId));
 }
