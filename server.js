@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
@@ -12,8 +11,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MIN_YEAR = 2000;
 
-// Importar módulo de autenticación
+// Importar módulos
 const auth = require('./auth');
+const db = require('./db');
 
 // Middleware
 app.use(cors());
@@ -21,31 +21,24 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname)); // Servir archivos estáticos
 
-// Ruta del archivo de datos
-const dataFile = path.join(__dirname, 'data.json');
+// Inicializar base de datos
+let dbReady = false;
+db.initializeTables()
+  .then(() => {
+    dbReady = true;
+    console.log('✅ Base de datos lista');
+  })
+  .catch(err => {
+    console.error('❌ Error al inicializar BD:', err);
+  });
 
-// Funciones auxiliares para leer/escribir JSON
-function loadData() {
-  try {
-    if (fs.existsSync(dataFile)) {
-      const raw = fs.readFileSync(dataFile, 'utf8');
-      return JSON.parse(raw);
-    }
-  } catch (err) {
-    console.error('Error al leer data.json:', err);
+// Middleware para verificar BD
+app.use((req, res, next) => {
+  if (!dbReady && !req.path.includes('/health')) {
+    return res.status(503).json({ error: 'Servidor inicializando...' });
   }
-  return {};
-}
-
-function saveData(data) {
-  try {
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2), 'utf8');
-    return true;
-  } catch (err) {
-    console.error('Error al guardar data.json:', err);
-    return false;
-  }
-}
+  next();
+});
 
 function normalizeMediaList(items, onlyImages = false) {
   if (!Array.isArray(items)) return [];
@@ -148,126 +141,114 @@ function buildEntryPayload(body, existingEntry) {
   };
 }
 
-// ===== API ENDPOINTS =====
-
 // GET: obtener todas las entradas de un municipio (solo publicadas)
-app.get('/api/municipio/:dept', (req, res) => {
-  const dept = decodeURIComponent(req.params.dept);
-  const data = loadData();
-  const entries = (data[dept] || []).map(normalizeStoredEntry);
-  // Filtrar solo publicadas
-  const published = entries.filter(e => e.published === true);
-  res.json(published);
+app.get('/api/municipio/:dept', async (req, res) => {
+  try {
+    const dept = decodeURIComponent(req.params.dept);
+    const entries = await db.getEntradasByMunicipio(dept);
+    // Filtrar solo publicadas
+    const published = entries.filter(e => e.published === true);
+    res.json(published);
+  } catch (error) {
+    console.error('Error obteniendo entradas:', error);
+    res.status(500).json({ error: 'Error al obtener entradas' });
+  }
 });
 
 // GET: obtener todas las entradas de un municipio (admin - todas)
-app.get('/api/admin/municipio/:dept', (req, res) => {
-  const dept = decodeURIComponent(req.params.dept);
-  const data = loadData();
-  const entries = (data[dept] || []).map(normalizeStoredEntry);
-  res.json(entries);
+app.get('/api/admin/municipio/:dept', auth.authMiddleware, async (req, res) => {
+  try {
+    const dept = decodeURIComponent(req.params.dept);
+    const entries = await db.getEntradasByMunicipio(dept);
+    res.json(entries);
+  } catch (error) {
+    console.error('Error obteniendo entradas:', error);
+    res.status(500).json({ error: 'Error al obtener entradas' });
+  }
 });
 
 // POST: guardar una entrada (admin)
-app.post('/api/admin/municipio/:dept', (req, res) => {
-  const dept = decodeURIComponent(req.params.dept);
-  const built = buildEntryPayload(req.body, {});
+app.post('/api/admin/municipio/:dept', auth.authMiddleware, auth.requireRole('admin', 'editor'), async (req, res) => {
+  try {
+    const dept = decodeURIComponent(req.params.dept);
+    const built = buildEntryPayload(req.body, {});
 
-  if (built.error) {
-    return res.status(400).json({ error: built.error });
-  }
+    if (built.error) {
+      return res.status(400).json({ error: built.error });
+    }
 
-  const data = loadData();
-  if (!data[dept]) data[dept] = [];
+    const entrada = {
+      id: Date.now(),
+      ...built.payload,
+      createdAt: new Date().toISOString()
+    };
 
-  const entry = {
-    id: Date.now(),
-    ...built.payload,
-    createdAt: new Date().toISOString()
-  };
-
-  data[dept].push(entry);
-  if (saveData(data)) {
-    res.json({ success: true, entry });
-  } else {
+    const saved = await db.saveEntrada(dept, entrada);
+    res.json({ success: true, entry: saved });
+  } catch (error) {
+    console.error('Error guardando entrada:', error);
     res.status(500).json({ error: 'Error al guardar' });
   }
 });
 
 // PUT: actualizar una entrada (admin)
-app.put('/api/admin/municipio/:dept/:id', (req, res) => {
-  const dept = decodeURIComponent(req.params.dept);
-  const entryId = Number(req.params.id);
+app.put('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole('admin', 'editor'), async (req, res) => {
+  try {
+    const dept = decodeURIComponent(req.params.dept);
+    const entryId = Number(req.params.id);
 
-  const data = loadData();
-  if (!data[dept]) {
-    return res.status(404).json({ error: 'Municipio no encontrado' });
-  }
+    const entries = await db.getEntradasByMunicipio(dept);
+    const entry = entries.find(e => e.id === entryId);
+    
+    if (!entry) {
+      return res.status(404).json({ error: 'Entrada no encontrada' });
+    }
 
-  const entry = data[dept].find(e => e.id === entryId);
-  if (!entry) {
-    return res.status(404).json({ error: 'Entrada no encontrada' });
-  }
+    const built = buildEntryPayload(req.body, entry);
+    if (built.error) {
+      return res.status(400).json({ error: built.error });
+    }
 
-  const built = buildEntryPayload(req.body, entry);
-  if (built.error) {
-    return res.status(400).json({ error: built.error });
-  }
+    const updated = {
+      ...entry,
+      ...built.payload,
+      id: entryId
+    };
 
-  entry.year              = built.payload.year;
-  entry.text              = built.payload.text;
-  entry.nombre_proyecto   = built.payload.nombre_proyecto;
-  entry.tipo_obra         = built.payload.tipo_obra;
-  entry.estado            = built.payload.estado;
-  entry.porcentaje_avance = built.payload.porcentaje_avance;
-  entry.contratista       = built.payload.contratista;
-  entry.valor_contrato    = built.payload.valor_contrato;
-  entry.fecha_inicio      = built.payload.fecha_inicio;
-  entry.fecha_fin_estimada= built.payload.fecha_fin_estimada;
-  entry.documents         = built.payload.documents;
-  entry.photos            = built.payload.photos;
-  entry.fileName          = built.payload.fileName;
-  entry.fileData          = built.payload.fileData;
-  entry.published         = built.payload.published;
-
-  if (saveData(data)) {
-    res.json({ success: true, entry });
-  } else {
+    const saved = await db.saveEntrada(dept, updated);
+    res.json({ success: true, entry: saved });
+  } catch (error) {
+    console.error('Error actualizando entrada:', error);
     res.status(500).json({ error: 'Error al actualizar' });
   }
 });
 
 // DELETE: eliminar una entrada (admin)
-app.delete('/api/admin/municipio/:dept/:id', (req, res) => {
-  const dept = decodeURIComponent(req.params.dept);
-  const entryId = Number(req.params.id);
-
-  const data = loadData();
-  if (!data[dept]) {
-    return res.status(404).json({ error: 'Municipio no encontrado' });
-  }
-
-  data[dept] = data[dept].filter(e => e.id !== entryId);
-  if (saveData(data)) {
+app.delete('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
+  try {
+    const entryId = Number(req.params.id);
+    await db.deleteEntrada(entryId);
     res.json({ success: true });
-  } else {
+  } catch (error) {
+    console.error('Error eliminando entrada:', error);
     res.status(500).json({ error: 'Error al eliminar' });
   }
 });
 
 // GET: obtener lista de todos los municipios
-app.get('/api/municipios', (req, res) => {
-  const data = loadData();
-  const municipios = Object.keys(data);
-  res.json(municipios);
+app.get('/api/municipios', async (req, res) => {
+  try {
+    const municipios = await db.getMunicipios();
+    res.json(municipios);
+  } catch (error) {
+    console.error('Error obteniendo municipios:', error);
+    res.status(500).json({ error: 'Error al obtener municipios' });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════
 // ✅ RUTAS DE AUTENTICACIÓN
 // ═══════════════════════════════════════════════════════════════════
-
-// Inicializar usuarios
-auth.initializeUsers();
 
 // 1. POST: Login
 app.post('/api/auth/login', async (req, res) => {
@@ -294,19 +275,37 @@ app.post('/api/auth/login', async (req, res) => {
 // 2. POST: Crear nuevo usuario (solo admin)
 app.post('/api/auth/register', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, password, role } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Datos incompletos' });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
     }
 
-    const result = await auth.createUser(username, email, password, role || 'editor');
-
-    if (result.error) {
-      return res.status(400).json({ error: result.error });
+    // Verificar si el usuario ya existe
+    const existing = await db.getUserByUsername(username);
+    if (existing) {
+      return res.status(400).json({ error: 'El usuario ya existe' });
     }
 
-    res.json(result);
+    // Hash de la contraseña
+    const hashedPassword = await auth.hashPassword(password);
+    
+    // Guardar usuario en BD
+    const newUser = await db.saveUser(username, hashedPassword, role || 'editor');
+
+    if (!newUser) {
+      return res.status(400).json({ error: 'No se pudo crear el usuario' });
+    }
+
+    res.json({ 
+      success: true, 
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        role: newUser.role,
+        createdAt: newUser.createdAt
+      }
+    });
   } catch (err) {
     console.error('Error al crear usuario:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -327,19 +326,12 @@ app.post('/api/auth/logout', auth.authMiddleware, (req, res) => {
 });
 
 // 5. GET: Listar usuarios (solo admin)
-app.get('/api/auth/users', auth.authMiddleware, auth.requireRole('admin'), (req, res) => {
+app.get('/api/auth/users', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
   try {
-    const data = auth.loadData();
-    const users = (data.users || []).map(u => ({
-      id: u.id,
-      username: u.username,
-      email: u.email,
-      role: u.role,
-      createdAt: u.createdAt,
-      lastLogin: u.lastLogin
-    }));
-    res.json(users);
+    const result = await db.query('SELECT id, username, role, createdAt FROM users ORDER BY createdAt DESC');
+    res.json(result.rows);
   } catch (err) {
+    console.error('Error obteniendo usuarios:', err);
     res.status(500).json({ error: 'Error al obtener usuarios' });
   }
 });
@@ -353,12 +345,23 @@ app.post('/api/municipios/:dept/entrada', auth.authMiddleware, auth.requireRole(
   // Ruta existente - ahora protegida
 });
 
-app.put('/api/municipios/:dept/entrada/:entryId', auth.authMiddleware, auth.requireRole('admin', 'editor'), (req, res) => {
-  // Ruta existente - ahora protegida
+app.put('/api/municipios/:dept/entrada/:entryId', auth.authMiddleware, auth.requireRole('admin', 'editor'), async (req, res) => {
+  // Ahora usa PostgreSQL automáticamente
+  res.status(200).json({ message: 'Use POST a /api/admin/municipio/:dept' });
 });
 
-app.delete('/api/municipios/:dept/entrada/:entryId', auth.authMiddleware, auth.requireRole('admin'), (req, res) => {
-  // Ruta existente - solo admin puede eliminar
+app.delete('/api/municipios/:dept/entrada/:entryId', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
+  // Ahora usa PostgreSQL automáticamente
+  res.status(200).json({ message: 'Use DELETE a /api/admin/municipio/:dept/:id' });
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    database: dbReady ? 'connected' : 'connecting',
+    env: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Iniciar servidor
@@ -366,4 +369,6 @@ app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📍 Abre http://localhost:${PORT} en tu navegador`);
   console.log(`🛠️  Dashboard admin: http://localhost:${PORT}/admin.html`);
+  console.log(`📊 Base de datos: PostgreSQL en Railway`);
+  console.log(`🔍 Health check: http://localhost:${PORT}/health`);
 });
