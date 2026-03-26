@@ -305,7 +305,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
     }
 
-    const result = await auth.login(username, password);
+    const result = await auth.login(username, password, db);
 
     if (result.error) {
       return res.status(401).json({ error: result.error });
@@ -313,7 +313,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error('Error en login:', err);
+    console.error('❌ Error en login:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

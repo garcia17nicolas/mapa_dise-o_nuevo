@@ -113,30 +113,36 @@ async function createUser(username, email, password, role = 'editor') {
   }
 }
 
-async function login(username, password) {
+async function login(username, password, dbModule = null) {
   try {
-    const data = loadData();
-    const user = data.users.find(u => u.username === username);
+    let user = null;
+
+    // Si hay módulo DB (PostgreSQL), usar eso; si no, usar data.json
+    if (dbModule) {
+      user = await dbModule.getUserByUsername(username);
+      console.log(`🔍 Buscando usuario en BD: ${username}`, user ? '✅' : '❌');
+    } else {
+      const data = loadData();
+      user = data.users?.find(u => u.username === username);
+      console.log(`🔍 Buscando usuario en JSON: ${username}`, user ? '✅' : '❌');
+    }
     
     if (!user) {
+      console.log(`❌ Usuario no encontrado: ${username}`);
       return { error: 'Usuario no encontrado' };
     }
     
-    const isValid = await verifyPassword(password, user.password);
+    const isValid = await verifyPassword(password, user.password || user.password);
     if (!isValid) {
+      console.log(`❌ Contraseña incorrecta para: ${username}`);
       return { error: 'Contraseña incorrecta' };
     }
-    
-    // Actualizar último login
-    user.lastLogin = new Date().toISOString();
-    saveData(data);
     
     // Generar JWT
     const token = jwt.sign(
       { 
         id: user.id, 
         username: user.username, 
-        email: user.email,
         role: user.role 
       },
       SECRET,
@@ -150,12 +156,11 @@ async function login(username, password) {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email,
         role: user.role
       }
     };
   } catch (err) {
-    console.error('Error en login:', err);
+    console.error('❌ Error en login:', err.message);
     return { error: 'Error en autenticación' };
   }
 }
