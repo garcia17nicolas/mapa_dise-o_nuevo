@@ -1,5 +1,5 @@
 // municipio.js - Lee datos publicados desde la API (público)
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 const MIN_YEAR = 2000;
 
 (function(){
