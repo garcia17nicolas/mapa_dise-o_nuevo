@@ -289,11 +289,20 @@ async function getEntryById(dept, entryId) {
 
 async function editEntry(entryId) {
   const dept = getSelectedDept();
-  if (!dept) return;
+  if (!dept) {
+    showAlert('Selecciona un municipio primero', 'error');
+    return;
+  }
 
   try {
+    console.log('Cargando entrada para editar:', entryId, 'en municipio:', dept);
     const entry = await getEntryById(dept, entryId);
-    if (!entry) return;
+    
+    if (!entry) {
+      console.error('Entrada no encontrada:', entryId);
+      showAlert('Entrada no encontrada', 'error');
+      return;
+    }
 
     deptInput.value = dept;
     yearInput.value = entry.year;
@@ -316,6 +325,7 @@ async function editEntry(entryId) {
     if (fechaFinInput)    fechaFinInput.value     = entry.fecha_fin_estimada|| '';
 
     entryForm.style.display = 'block';
+    showAlert('✏️ Editando entrada - Realiza los cambios y guarda');
 
     const docsNames = entry.documents.slice(0, 5).map(d => escapeHtml(d.name)).join(', ');
     editAttachmentsInfo.style.display = 'block';
@@ -323,34 +333,47 @@ async function editEntry(entryId) {
     yearInput.focus();
   } catch (err) {
     console.error('Error editando:', err);
-    showAlert('Error al abrir la entrada para editar', 'error');
+    showAlert('Error al abrir la entrada para editar: ' + err.message, 'error');
   }
 }
 
 async function togglePublish(entryId) {
   const dept = getSelectedDept();
-  if (!dept) return;
+  if (!dept) {
+    showAlert('Selecciona un municipio primero', 'error');
+    return;
+  }
 
   try {
+    console.log('Cambiando publicación de entrada:', entryId, 'en municipio:', dept);
     const entry = await getEntryById(dept, entryId);
-    if (!entry) return;
+    
+    if (!entry) {
+      console.error('Entrada no encontrada:', entryId);
+      showAlert('Entrada no encontrada', 'error');
+      return;
+    }
+
+    const newStatus = !entry.published;
+    console.log('Estado actual:', entry.published, '→ Nuevo estado:', newStatus);
 
     const update = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...entry,
-        published: !entry.published,
+        published: newStatus,
         fileName: entry.documents[0]?.name || null,
         fileData: entry.documents[0]?.data || null
       })
     });
 
     if (update.ok) {
-      showAlert(entry.published ? 'Entrada ocultada del público' : 'Entrada publicada ✅');
+      showAlert(newStatus ? '✅ Entrada publicada' : '👁️ Entrada ocultada');
       loadEntries();
     } else {
       const err = await update.json().catch(() => ({}));
+      console.error('Error en respuesta:', err);
       showAlert(err.error || 'No se pudo cambiar el estado de publicación', 'error');
     }
   } catch (err) {
@@ -360,24 +383,31 @@ async function togglePublish(entryId) {
 }
 
 async function deleteEntry(entryId) {
-  if (!confirm('¿Eliminar esta entrada?')) return;
+  if (!confirm('¿Eliminar esta entrada definitivamente?')) return;
+  
   const dept = getSelectedDept();
-  if (!dept) return;
+  if (!dept) {
+    showAlert('Selecciona un municipio primero', 'error');
+    return;
+  }
 
   try {
+    console.log('Eliminando entrada:', entryId, 'en municipio:', dept);
     const res = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
       method: 'DELETE'
     });
 
     if (res.ok) {
-      showAlert('Entrada eliminada');
+      showAlert('✅ Entrada eliminada');
       loadEntries();
     } else {
-      showAlert('No se pudo eliminar la entrada', 'error');
+      const err = await res.json().catch(() => ({}));
+      console.error('Error en respuesta:', err);
+      showAlert(err.error || 'No se pudo eliminar la entrada', 'error');
     }
   } catch (err) {
     console.error('Error eliminando:', err);
-    showAlert('Error al eliminar', 'error');
+    showAlert('Error al eliminar: ' + err.message, 'error');
   }
 }
 
