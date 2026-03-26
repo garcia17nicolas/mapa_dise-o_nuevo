@@ -357,28 +357,46 @@ async function togglePublish(entryId) {
     const newStatus = !entry.published;
     console.log('Estado actual:', entry.published, '→ Nuevo estado:', newStatus);
 
+    // Construir objeto minimalista para solo cambiar published
+    // No incluir documents/photos directamente para evitar problemas de normalización
+    const updateData = {
+      year: entry.year,
+      text: entry.text,
+      published: newStatus,
+      nombre_proyecto: entry.nombre_proyecto,
+      tipo_obra: entry.tipo_obra,
+      estado: entry.estado,
+      porcentaje_avance: entry.porcentaje_avance,
+      contratista: entry.contratista,
+      valor_contrato: entry.valor_contrato,
+      fecha_inicio: entry.fecha_inicio,
+      fecha_fin_estimada: entry.fecha_fin_estimada
+      // No enviar documents/photos para evitar que se reprocessen
+    };
+
+    console.log('Enviando actualización:', updateData);
+
     const update = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...entry,
-        published: newStatus,
-        fileName: entry.documents[0]?.name || null,
-        fileData: entry.documents[0]?.data || null
-      })
+      body: JSON.stringify(updateData)
     });
 
+    console.log('Respuesta del servidor:', update.status, update.statusText);
+
     if (update.ok) {
+      const result = await update.json();
+      console.log('Actualización exitosa:', result);
       showAlert(newStatus ? '✅ Entrada publicada' : '👁️ Entrada ocultada');
-      loadEntries();
+      setTimeout(() => loadEntries(), 500);
     } else {
       const err = await update.json().catch(() => ({}));
-      console.error('Error en respuesta:', err);
-      showAlert(err.error || 'No se pudo cambiar el estado de publicación', 'error');
+      console.error('Error en respuesta:', update.status, err);
+      showAlert(err.error || `Error ${update.status}: No se pudo cambiar el estado`, 'error');
     }
   } catch (err) {
     console.error('Error publicando:', err);
-    showAlert('Error al cambiar publicación: ' + err.message, 'error');
+    showAlert('Error: ' + err.message, 'error');
   }
 }
 
