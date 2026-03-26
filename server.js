@@ -223,6 +223,10 @@ app.post('/api/admin/municipio/:dept', auth.authMiddleware, auth.requireRole('ad
       return res.status(400).json({ error: built.error });
     }
 
+    // IMPORTANTE: Crear municipio si no existe
+    // Esto asegura que la entrada se pueda guardar correctamente
+    await db.saveMunicipio(dept, 'Cauca', '#D97373');
+
     const entrada = {
       id: Date.now(),
       ...built.payload,
@@ -242,6 +246,9 @@ app.put('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole(
   try {
     const dept = decodeURIComponent(req.params.dept);
     const entryId = Number(req.params.id);
+
+    // IMPORTANTE: Asegurar que el municipio existe
+    await db.saveMunicipio(dept, 'Cauca', '#D97373');
 
     const entries = await db.getEntradasByMunicipio(dept);
     const entry = entries.find(e => e.id === entryId);
