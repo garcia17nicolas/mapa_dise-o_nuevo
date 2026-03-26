@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Configuración - Nasa Kiwe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f9f5f0 0%, #f5e6d3 100%); min-height: 100vh; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    
+    header { background: linear-gradient(135deg, #D97373 0%, #B85555 100%); color: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 20px; }
+    header img.logo { height: 70px; width: auto; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2)); }
+    header .header-content { flex: 1; }
+    header h1 { font-size: 28px; margin-bottom: 5px; color: #F4D35E; }
+    header p { font-size: 14px; opacity: 0.9; }
+    header a { display: inline-block; margin-top: 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 4px; font-size: 13px; transition: all 0.3s; }
+    header a:hover { background: rgba(255,255,255,0.3); }
+
+    .content { display: grid; grid-template-columns: 250px 1fr; gap: 25px; }
+    
+    .sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: fit-content; }
+    .sidebar h3 { color: #D97373; margin-bottom: 15px; font-size: 14px; text-transform: uppercase; font-weight: 700; }
+    .sidebar a { display: block; padding: 12px 15px; margin-bottom: 8px; color: #333; text-decoration: none; border-radius: 6px; transition: all 0.3s; border-left: 3px solid transparent; }
+    .sidebar a:hover { background: #f9f5f0; border-left-color: #D97373; color: #D97373; }
+    .sidebar a.active { background: linear-gradient(135deg, #FFF9F7 0%, #FFE0B2 100%); border-left-color: #D97373; color: #D97373; font-weight: 600; }
+
+    .panel { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .panel h2 { color: #D97373; margin-bottom: 25px; font-size: 22px; padding-bottom: 15px; border-bottom: 2px solid #D97373; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: all 0.3s; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #D97373; box-shadow: 0 0 0 3px rgba(217,115,115,0.1); }
+    
+    .info-box { background: linear-gradient(135deg, #f9f5f0 0%, #f5e6d3 100%); padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #D97373; }
+    .info-box p { color: #666; font-size: 14px; margin: 5px 0; }
+    .info-box strong { color: #D97373; }
+
+    button { padding: 12px 24px; background: linear-gradient(135deg, #D97373 0%, #B85555 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; font-size: 14px; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(217,115,115,0.3); }
+
+    .alert { padding: 15px; margin-bottom: 20px; border-radius: 6px; animation: slideIn 0.3s; }
+    .alert.success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+    .alert.error { background: #f8d7da; color: #721c24; border-left: 4px solid #f5c6cb; }
+
+    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    @media (max-width: 768px) {
+      .content { grid-template-columns: 1fr; }
+      header { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="logo.png" alt="NASA KIWE" class="logo">
+      <div class="header-content">
+        <h1>⚙️ Configuración</h1>
+        <p>Gestiona tu perfil y seguridad</p>
+      </div>
+      <a href="admin.html">← Volver a Admin</a>
+    </header>
+
+    <div class="content">
+      <div class="sidebar">
+        <h3>Opciones</h3>
+        <a href="#perfil" class="nav-link active" data-section="perfil">👤 Perfil</a>
+        <a href="#seguridad" class="nav-link" data-section="seguridad">🔐 Cambiar Contraseña</a>
+      </div>
+
+      <div class="panel">
+        <div id="alert"></div>
+
+        <!-- SECCIÓN PERFIL -->
+        <div id="perfil-section" class="section active">
+          <h2>👤 Mi Perfil</h2>
+          <div class="info-box">
+            <p><strong>Usuario:</strong> <span id="username-display"></span></p>
+            <p><strong>Rol:</strong> <span id="role-display"></span></p>
+            <p><strong>Miembro desde:</strong> <span id="joined-display"></span></p>
+          </div>
+        </div>
+
+        <!-- SECCIÓN CAMBIAR CONTRASEÑA -->
+        <div id="seguridad-section" class="section" style="display:none;">
+          <h2>🔐 Cambiar Contraseña</h2>
+          <form id="changePasswordForm">
+            <div class="form-group">
+              <label>Contraseña Actual:</label>
+              <input type="password" id="currentPassword" required placeholder="Ingresa tu contraseña actual">
+            </div>
+
+            <div class="form-group">
+              <label>Nueva Contraseña:</label>
+              <input type="password" id="newPassword" required placeholder="Ingresa una nueva contraseña">
+              <small style="color:#999; font-size:12px; margin-top:5px; display:block;">✓ Mínimo 6 caracteres</small>
+            </div>
+
+            <div class="form-group">
+              <label>Confirmar Nueva Contraseña:</label>
+              <input type="password" id="confirmPassword" required placeholder="Confirma tu nueva contraseña">
+            </div>
+
+            <button type="submit">💾 Guardar Nueva Contraseña</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+
+    // Verificar autenticación
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!token || !user) {
+        window.location.href = 'login.html';
+        return null;
+      }
+      return { token, user };
+    }
+
+    const auth = checkAuth();
+
+    function fetchWithAuth(url, options = {}) {
+      const token = localStorage.getItem('token');
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    }
+
+    function showAlert(message, type = 'success') {
+      const alertDiv = document.getElementById('alert');
+      alertDiv.innerHTML = `<div class="alert ${type}">${message}</div>`;
+      setTimeout(() => {
+        alertDiv.innerHTML = '';
+      }, 4000);
+    }
+
+    // Cargar datos del usuario
+    document.getElementById('username-display').textContent = auth.user.username;
+    document.getElementById('role-display').textContent = auth.user.role.toUpperCase();
+    const joinedDate = auth.user.createdAt ? new Date(auth.user.createdAt).toLocaleDateString('es-ES') : 'N/D';
+    document.getElementById('joined-display').textContent = joinedDate;
+
+    // Navegación entre secciones
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const section = link.getAttribute('data-section');
+        
+        document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+        document.getElementById(section + '-section').style.display = 'block';
+        
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      });
+    });
+
+    // Formulario de cambiar contraseña
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (newPassword.length < 6) {
+        showAlert('La nueva contraseña debe tener al menos 6 caracteres', 'error');
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        showAlert('Las contraseñas no coinciden', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetchWithAuth(`${API_BASE}/auth/change-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+        
+        if (res.ok) {
+          showAlert('✅ Contraseña cambiada exitosamente', 'success');
+          document.getElementById('changePasswordForm').reset();
+          setTimeout(() => {
+            window.location.href = 'admin.html';
+          }, 2000);
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showAlert(err.error || 'Error al cambiar la contraseña', 'error');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        showAlert(`Error: ${err.message}`, 'error');
+      }
+    });
+  </script>
+</body>
+</html>
