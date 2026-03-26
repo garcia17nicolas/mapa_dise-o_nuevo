@@ -1,5 +1,5 @@
 // admin.js - Dashboard administrativo para municipios
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 const MIN_YEAR = 2000;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -340,7 +340,7 @@ async function deleteEntry(entryId) {
   if (!dept) return;
 
   try {
-    const res = await fetch(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
+    const res = await fetchWithAuth(`${API_BASE}/admin/municipio/${encodeURIComponent(dept)}/${entryId}`, {
       method: 'DELETE'
     });
 
@@ -477,7 +477,7 @@ entryForm.addEventListener('submit', async ev => {
       published: publishedCheckbox.checked
     };
 
-    const res = await fetch(url, {
+    const res = await fetchWithAuth(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
