@@ -64,6 +64,9 @@ const initializeTables = async () => {
     `);
 
     // Tabla de entradas (entries)
+    // Primero, dropar la tabla si existe para recrearla con la nueva estructura
+    await query(`DROP TABLE IF EXISTS entradas CASCADE`);
+    
     await query(`
       CREATE TABLE IF NOT EXISTS entradas (
         id BIGINT PRIMARY KEY,
@@ -74,7 +77,15 @@ const initializeTables = async () => {
         fileData TEXT,
         published BOOLEAN DEFAULT true,
         createdAt TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        nombre_proyecto VARCHAR(255),
+        tipo_obra VARCHAR(100),
+        estado VARCHAR(100),
+        porcentaje_avance INT DEFAULT 0,
+        contratista VARCHAR(255),
+        valor_contrato BIGINT,
+        fecha_inicio DATE,
+        fecha_fin_estimada DATE
       )
     `);
 
@@ -123,11 +134,17 @@ const saveEntrada = async (municipioNombre, entrada) => {
   }
 
   const res = await query(
-    `INSERT INTO entradas (id, municipioId, year, text, fileName, fileData, published, createdAt)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     ON CONFLICT (id) DO UPDATE SET year=$3, text=$4, fileName=$5, fileData=$6, published=$7
+    `INSERT INTO entradas (id, municipioId, year, text, fileName, fileData, published, createdAt, 
+                          nombre_proyecto, tipo_obra, estado, porcentaje_avance, contratista, valor_contrato, fecha_inicio, fecha_fin_estimada)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+     ON CONFLICT (id) DO UPDATE SET year=$3, text=$4, fileName=$5, fileData=$6, published=$7,
+                                   nombre_proyecto=$9, tipo_obra=$10, estado=$11, porcentaje_avance=$12, 
+                                   contratista=$13, valor_contrato=$14, fecha_inicio=$15, fecha_fin_estimada=$16
      RETURNING *`,
-    [entrada.id, mun.id, entrada.year, entrada.text, entrada.fileName || null, entrada.fileData || null, entrada.published, entrada.createdAt]
+    [entrada.id, mun.id, entrada.year, entrada.text, entrada.fileName || null, entrada.fileData || null, 
+     entrada.published, entrada.createdAt, entrada.nombre_proyecto || null, entrada.tipo_obra || null,
+     entrada.estado || null, entrada.porcentaje_avance || 0, entrada.contratista || null, 
+     entrada.valor_contrato || null, entrada.fecha_inicio || null, entrada.fecha_fin_estimada || null]
   );
   return res.rows[0];
 };
