@@ -247,15 +247,22 @@ app.put('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole(
     const dept = decodeURIComponent(req.params.dept);
     const entryId = Number(req.params.id);
 
+    console.log(`[PUT] Actualizando entrada ${entryId} en municipio "${dept}"`);
+
     // IMPORTANTE: Asegurar que el municipio existe
     await db.saveMunicipio(dept, 'Cauca', '#D97373');
 
     const entries = await db.getEntradasByMunicipio(dept);
-    const entry = entries.find(e => e.id === entryId);
+    console.log(`[PUT] Entradas disponibles:`, entries.map(e => ({ id: e.id, tipo: typeof e.id, nombre_proyecto: e.nombre_proyecto })));
+    
+    const entry = entries.find(e => Number(e.id) === Number(entryId));
     
     if (!entry) {
-      return res.status(404).json({ error: 'Entrada no encontrada' });
+      console.error(`[PUT] Entrada ${entryId} NO encontrada en ${dept}. IDs disponibles:`, entries.map(e => e.id));
+      return res.status(404).json({ error: `Entrada ${entryId} no encontrada en ${dept}` });
     }
+
+    console.log(`[PUT] Entrada encontrada:`, { id: entry.id, nombre_proyecto: entry.nombre_proyecto });
 
     const built = buildEntryPayload(req.body, entry);
     if (built.error) {
@@ -269,6 +276,7 @@ app.put('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole(
     };
 
     const saved = await db.saveEntrada(dept, updated);
+    console.log(`[PUT] Entrada actualizada exitosamente`);
     res.json({ success: true, entry: saved });
   } catch (error) {
     console.error('Error actualizando entrada:', error);
@@ -279,8 +287,19 @@ app.put('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole(
 // DELETE: eliminar una entrada (admin)
 app.delete('/api/admin/municipio/:dept/:id', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
   try {
+    const dept = decodeURIComponent(req.params.dept);
     const entryId = Number(req.params.id);
-    await db.deleteEntrada(entryId);
+    
+    console.log(`[DELETE] Eliminando entrada ${entryId} del municipio "${dept}"`);
+    
+    const result = await db.deleteEntrada(entryId);
+    
+    if (!result) {
+      console.warn(`[DELETE] No se encontró entrada ${entryId} para eliminar`);
+      return res.status(404).json({ error: `Entrada ${entryId} no encontrada` });
+    }
+    
+    console.log(`[DELETE] Entrada ${entryId} eliminada exitosamente`);
     res.json({ success: true });
   } catch (error) {
     console.error('Error eliminando entrada:', error);
