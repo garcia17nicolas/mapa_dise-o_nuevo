@@ -35,10 +35,30 @@ db.initializeTables()
           
           // Mapping de regiones
           const regionColors = {
-            'NORTE': '#D97373', 'SUR': '#F4D35E', 'ORIENTE': '#58D68D',
-            'OCCIDENTE': '#5DADE2', 'CENTRO': '#E8B4B8'
+            'NORTE': '#D97373', 'SUR': '#F4D35E', 'ORIENTE': '#5DADE2',
+            'OCCIDENTE': '#58D68D', 'CENTRO': '#F8A855'
           };
-          const municipioToRegion = { 'INZÁ': 'CENTRO', 'EL TAMBO': 'NORTE', 'PÁEZ': 'SUR' };
+          const municipioToRegion = {
+            // ORIENTE
+            'CALDONO': 'ORIENTE', 'INZÁ': 'ORIENTE', 'JAMBALÓ': 'ORIENTE',
+            'PÁEZ': 'ORIENTE', 'PURACÉ': 'ORIENTE', 'SILVIA': 'ORIENTE',
+            'TORIBÍO': 'ORIENTE', 'TOTORÓ': 'ORIENTE',
+            // OCCIDENTE
+            'GUAPI': 'OCCIDENTE', 'LÓPEZ DE MICAY': 'OCCIDENTE', 'TIMBIQUÍ': 'OCCIDENTE',
+            // SUR
+            'ALMAGUER': 'SUR', 'ARGELIA': 'SUR', 'BALBOA': 'SUR', 'BOLÍVAR': 'SUR',
+            'FLORENCIA': 'SUR', 'LA VEGA': 'SUR', 'MERCADERES': 'SUR', 'PATÍA': 'SUR',
+            'PIAMONTE': 'SUR', 'SAN SEBASTIÁN': 'SUR', 'SANTA ROSA': 'SUR', 'SUCRE': 'SUR',
+            // CENTRO
+            'CAJIBÍO': 'CENTRO', 'EL TAMBO': 'CENTRO', 'LA SIERRA': 'CENTRO',
+            'MORALES': 'CENTRO', 'PIENDAMÓ': 'CENTRO', 'POPAYÁN': 'CENTRO',
+            'ROSAS': 'CENTRO', 'SOTARÁ': 'CENTRO', 'TIMBÍO': 'CENTRO',
+            // NORTE
+            'BUENOS AIRES': 'NORTE', 'CALOTO': 'NORTE', 'CORINTO': 'NORTE',
+            'GUACHENÉ': 'NORTE', 'MIRANDA': 'NORTE', 'PADILLA': 'NORTE',
+            'PUERTO TEJADA': 'NORTE', 'SANTANDER DE QUILICHAO': 'NORTE',
+            'SUÁREZ': 'NORTE', 'VILLA RICA': 'NORTE'
+          };
           
           // Migrar municipios
           for (const [municipioNombre, entradas] of Object.entries(data)) {
@@ -412,8 +432,8 @@ app.post('/api/auth/logout', auth.authMiddleware, (req, res) => {
 // 5. GET: Listar usuarios (solo admin)
 app.get('/api/auth/users', auth.authMiddleware, auth.requireRole('admin'), async (req, res) => {
   try {
-    const result = await db.query('SELECT id, username, role, createdAt FROM users ORDER BY createdAt DESC');
-    res.json(result.rows);
+    const users = await db.getUsers();
+    res.json(users);
   } catch (err) {
     console.error('Error obteniendo usuarios:', err);
     res.status(500).json({ error: 'Error al obtener usuarios' });
@@ -452,7 +472,7 @@ app.post('/api/auth/change-password', auth.authMiddleware, async (req, res) => {
     const hashedPassword = await auth.hashPassword(newPassword);
 
     // Actualizar contraseña
-    await db.query('UPDATE users SET password = $1, updatedAt = CURRENT_TIMESTAMP WHERE id = $2', [hashedPassword, userId]);
+    await db.query('UPDATE users SET password = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2', [hashedPassword, userId]);
 
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
   } catch (err) {

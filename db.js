@@ -31,15 +31,9 @@ const query = async (text, params) => {
   }
 };
 
-// Crear tablas si no existen
+// Crear tablas si no existen (sin DROP - preserva datos entre reinicios)
 const initializeTables = async () => {
   try {
-    // Dropear tabla entradas si existe (para corregir tipo LONGTEXT)
-    try {
-      await query(`DROP TABLE IF EXISTS entradas CASCADE`);
-      console.log('🔄 Tabla entradas limpiada');
-    } catch(e) {}
-
     // Tabla de usuarios
     await query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -47,8 +41,8 @@ const initializeTables = async () => {
         username VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'revisor',
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -59,25 +53,24 @@ const initializeTables = async () => {
         nombre VARCHAR(255) UNIQUE NOT NULL,
         region VARCHAR(100),
         color VARCHAR(7),
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     // Tabla de entradas (entries)
-    // Primero, dropar la tabla si existe para recrearla con la nueva estructura
-    await query(`DROP TABLE IF EXISTS entradas CASCADE`);
-    
     await query(`
       CREATE TABLE IF NOT EXISTS entradas (
         id BIGINT PRIMARY KEY,
-        municipioId INT NOT NULL REFERENCES municipios(id) ON DELETE CASCADE,
+        "municipioId" INT NOT NULL REFERENCES municipios(id) ON DELETE CASCADE,
         year INT,
         text TEXT,
-        fileName VARCHAR(255),
-        fileData TEXT,
+        "fileName" VARCHAR(255),
+        "fileData" TEXT,
+        documents JSONB DEFAULT '[]',
+        photos JSONB DEFAULT '[]',
         published BOOLEAN DEFAULT true,
-        createdAt TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "createdAt" TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         nombre_proyecto VARCHAR(255),
         tipo_obra VARCHAR(100),
         estado VARCHAR(100),
@@ -88,6 +81,14 @@ const initializeTables = async () => {
         fecha_fin_estimada DATE
       )
     `);
+
+    // Add documents/photos columns if they don't exist (migration for existing tables)
+    try {
+      await query(`ALTER TABLE entradas ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'`);
+      await query(`ALTER TABLE entradas ADD COLUMN IF NOT EXISTS photos JSONB DEFAULT '[]'`);
+    } catch(e) {
+      // Columns already exist, ignore
+    }
 
     console.log('✅ Tablas inicializadas correctamente');
   } catch (error) {
@@ -109,7 +110,7 @@ const getMunicipioByName = async (nombre) => {
 
 const saveMunicipio = async (nombre, region, color) => {
   const res = await query(
-    'INSERT INTO municipios (nombre, region, color) VALUES ($1, $2, $3) ON CONFLICT (nombre) DO UPDATE SET region = $2, color = $3 RETURNING *',
+    'INSERT INTO municipios (nombre, region, color) VALUES ($1, $2, $3) ON CONFLICT (nombre) DO UPDATE SET region = EXCLUDED.region, color = EXCLUDED.color RETURNING *',
     [nombre, region, color]
   );
   return res.rows[0];
@@ -119,11 +120,21 @@ const saveMunicipio = async (nombre, region, color) => {
 const getEntradasByMunicipio = async (municipioNombre) => {
   const res = await query(`
     SELECT e.* FROM entradas e
-    JOIN municipios m ON e.municipioId = m.id
+    JOIN municipios m ON e."municipioId" = m.id
     WHERE m.nombre = $1
-    ORDER BY e.year DESC, e.createdAt DESC
+    ORDER BY e.year DESC, e."createdAt" DESC
   `, [municipioNombre]);
-  return res.rows;
+  // Parse JSONB columns and normalize column names for frontend
+  return res.rows.map(row => ({
+    ...row,
+    municipioId: row.municipioId,
+    fileName: row.fileName,
+    fileData: row.fileData,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    documents: typeof row.documents === 'string' ? JSON.parse(row.documents) : (row.documents || []),
+    photos: typeof row.photos === 'string' ? JSON.parse(row.photos) : (row.photos || [])
+  }));
 };
 
 const saveEntrada = async (municipioNombre, entrada) => {
@@ -133,17 +144,22 @@ const saveEntrada = async (municipioNombre, entrada) => {
     throw new Error(`Municipio ${municipioNombre} no encontrado`);
   }
 
+  const documentsJson = JSON.stringify(Array.isArray(entrada.documents) ? entrada.documents : []);
+  const photosJson = JSON.stringify(Array.isArray(entrada.photos) ? entrada.photos : []);
+
   const res = await query(
-    `INSERT INTO entradas (id, municipioId, year, text, fileName, fileData, published, createdAt, 
+    `INSERT INTO entradas (id, "municipioId", year, text, "fileName", "fileData", documents, photos, published, "createdAt",
                           nombre_proyecto, tipo_obra, estado, porcentaje_avance, contratista, valor_contrato, fecha_inicio, fecha_fin_estimada)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-     ON CONFLICT (id) DO UPDATE SET year=$3, text=$4, fileName=$5, fileData=$6, published=$7,
-                                   nombre_proyecto=$9, tipo_obra=$10, estado=$11, porcentaje_avance=$12, 
-                                   contratista=$13, valor_contrato=$14, fecha_inicio=$15, fecha_fin_estimada=$16
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+     ON CONFLICT (id) DO UPDATE SET year=$3, text=$4, "fileName"=$5, "fileData"=$6, documents=$7, photos=$8, published=$9,
+                                   nombre_proyecto=$11, tipo_obra=$12, estado=$13, porcentaje_avance=$14,
+                                   contratista=$15, valor_contrato=$16, fecha_inicio=$17, fecha_fin_estimada=$18,
+                                   "updatedAt"=CURRENT_TIMESTAMP
      RETURNING *`,
-    [entrada.id, mun.id, entrada.year, entrada.text, entrada.fileName || null, entrada.fileData || null, 
+    [entrada.id, mun.id, entrada.year, entrada.text, entrada.fileName || null, entrada.fileData || null,
+     documentsJson, photosJson,
      entrada.published, entrada.createdAt, entrada.nombre_proyecto || null, entrada.tipo_obra || null,
-     entrada.estado || null, entrada.porcentaje_avance || 0, entrada.contratista || null, 
+     entrada.estado || null, entrada.porcentaje_avance || 0, entrada.contratista || null,
      entrada.valor_contrato || null, entrada.fecha_inicio || null, entrada.fecha_fin_estimada || null]
   );
   return res.rows[0];
@@ -158,6 +174,11 @@ const deleteEntrada = async (entradaId) => {
 const getUserByUsername = async (username) => {
   const res = await query('SELECT * FROM users WHERE username = $1', [username]);
   return res.rows[0];
+};
+
+const getUsers = async () => {
+  const res = await query('SELECT id, username, role, "createdAt" FROM users ORDER BY "createdAt" DESC');
+  return res.rows;
 };
 
 const saveUser = async (username, hashedPassword, role = 'revisor') => {
@@ -184,6 +205,7 @@ module.exports = {
   saveEntrada,
   deleteEntrada,
   getUserByUsername,
+  getUsers,
   saveUser,
   close
 };
