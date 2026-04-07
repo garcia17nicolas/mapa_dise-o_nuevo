@@ -41,8 +41,8 @@ const initializeTables = async () => {
         username VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'revisor',
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -53,7 +53,7 @@ const initializeTables = async () => {
         nombre VARCHAR(255) UNIQUE NOT NULL,
         region VARCHAR(100),
         color VARCHAR(7),
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -61,16 +61,16 @@ const initializeTables = async () => {
     await query(`
       CREATE TABLE IF NOT EXISTS entradas (
         id BIGINT PRIMARY KEY,
-        "municipioId" INT NOT NULL REFERENCES municipios(id) ON DELETE CASCADE,
+        municipioid INT NOT NULL REFERENCES municipios(id) ON DELETE CASCADE,
         year INT,
         text TEXT,
-        "fileName" VARCHAR(255),
-        "fileData" TEXT,
+        filename VARCHAR(255),
+        filedata TEXT,
         documents JSONB DEFAULT '[]',
         photos JSONB DEFAULT '[]',
         published BOOLEAN DEFAULT true,
-        "createdAt" TIMESTAMP,
-        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        createdat TIMESTAMP,
+        updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         nombre_proyecto VARCHAR(255),
         tipo_obra VARCHAR(100),
         estado VARCHAR(100),
@@ -120,18 +120,18 @@ const saveMunicipio = async (nombre, region, color) => {
 const getEntradasByMunicipio = async (municipioNombre) => {
   const res = await query(`
     SELECT e.* FROM entradas e
-    JOIN municipios m ON e."municipioId" = m.id
+    JOIN municipios m ON e.municipioid = m.id
     WHERE m.nombre = $1
-    ORDER BY e.year DESC, e."createdAt" DESC
+    ORDER BY e.year DESC, e.createdat DESC
   `, [municipioNombre]);
   // Parse JSONB columns and normalize column names for frontend
   return res.rows.map(row => ({
     ...row,
-    municipioId: row.municipioId,
-    fileName: row.fileName,
-    fileData: row.fileData,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    municipioId: row.municipioid,
+    fileName: row.filename,
+    fileData: row.filedata,
+    createdAt: row.createdat,
+    updatedAt: row.updatedat,
     documents: typeof row.documents === 'string' ? JSON.parse(row.documents) : (row.documents || []),
     photos: typeof row.photos === 'string' ? JSON.parse(row.photos) : (row.photos || [])
   }));
@@ -148,13 +148,13 @@ const saveEntrada = async (municipioNombre, entrada) => {
   const photosJson = JSON.stringify(Array.isArray(entrada.photos) ? entrada.photos : []);
 
   const res = await query(
-    `INSERT INTO entradas (id, "municipioId", year, text, "fileName", "fileData", documents, photos, published, "createdAt",
+    `INSERT INTO entradas (id, municipioid, year, text, filename, filedata, documents, photos, published, createdat,
                           nombre_proyecto, tipo_obra, estado, porcentaje_avance, contratista, valor_contrato, fecha_inicio, fecha_fin_estimada)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-     ON CONFLICT (id) DO UPDATE SET year=$3, text=$4, "fileName"=$5, "fileData"=$6, documents=$7, photos=$8, published=$9,
+     ON CONFLICT (id) DO UPDATE SET year=$3, text=$4, filename=$5, filedata=$6, documents=$7, photos=$8, published=$9,
                                    nombre_proyecto=$11, tipo_obra=$12, estado=$13, porcentaje_avance=$14,
                                    contratista=$15, valor_contrato=$16, fecha_inicio=$17, fecha_fin_estimada=$18,
-                                   "updatedAt"=CURRENT_TIMESTAMP
+                                   updatedat=CURRENT_TIMESTAMP
      RETURNING *`,
     [entrada.id, mun.id, entrada.year, entrada.text, entrada.fileName || null, entrada.fileData || null,
      documentsJson, photosJson,
@@ -177,7 +177,7 @@ const getUserByUsername = async (username) => {
 };
 
 const getUsers = async () => {
-  const res = await query('SELECT id, username, role, "createdAt" FROM users ORDER BY "createdAt" DESC');
+  const res = await query('SELECT id, username, role, createdat FROM users ORDER BY createdat DESC');
   return res.rows;
 };
 
