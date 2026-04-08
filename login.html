@@ -224,6 +224,36 @@
     .demo-credentials strong {
       color: #D97373;
     }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper input {
+      padding-right: 42px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      width: auto;
+      margin: 0;
+      color: #999;
+      transition: color 0.2s;
+    }
+
+    .toggle-password:hover {
+      color: #D97373;
+      transform: translateY(-50%);
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
@@ -256,14 +286,17 @@
 
       <div class="form-group">
         <label for="password">🔐 Contraseña</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password"
-          placeholder="Ingresa tu contraseña"
-          required
-          autocomplete="current-password"
-        >
+        <div class="input-wrapper">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Ingresa tu contraseña"
+            required
+            autocomplete="current-password"
+          >
+          <button type="button" class="toggle-password" id="togglePassword" title="Mostrar/ocultar contraseña">👁</button>
+        </div>
         <div class="error-message">Por favor ingresa tu contraseña</div>
       </div>
 
@@ -346,6 +379,13 @@
         loginBtn.disabled = false;
         btnText.textContent = 'Iniciar Sesión';
       }
+    });
+
+    // Toggle visibilidad de contraseña
+    document.getElementById('togglePassword').addEventListener('click', function () {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      this.textContent = isPassword ? '🙈' : '👁';
     });
 
     // Focus en enter

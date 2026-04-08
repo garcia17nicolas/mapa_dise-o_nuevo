@@ -70,10 +70,16 @@
     }
 
     #mapa {
-      height: 700px;
+      height: clamp(400px, 70vh, 750px);
       width: 100%;
       position: relative;
       background: #f8f9fa;
+    }
+
+    @media (max-width: 600px) {
+      .page-title h1 { font-size: 28px; }
+      .page-title p { font-size: 16px; }
+      .page-title img.logo { height: 60px; }
     }
 
     .loading {
@@ -112,7 +118,7 @@
     }
 
     .info-panel {
-      padding: 20px;
+      padding: 24px 28px;
       background: #f8f9fa;
       border-top: 1px solid #dee2e6;
     }
@@ -120,13 +126,49 @@
     .info-panel h3 {
       color: #495057;
       margin-bottom: 10px;
-      font-size: 18px;
+      font-size: 17px;
     }
 
     .info-panel p {
       color: #6c757d;
       font-size: 14px;
       line-height: 1.6;
+    }
+
+    .legend-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1px solid #e0e0e0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .info-footer {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #e9ecef;
+      font-size: 12px;
+      color: #adb5bd;
+      text-align: center;
     }
   </style>
 </head>
@@ -139,6 +181,22 @@
         <h1>Nasa Kiwe</h1>
         <p>Departamento del Cauca</p>
       </div>
+      <a href="login.html" style="
+        display: inline-block;
+        padding: 9px 18px;
+        background: rgba(255,255,255,0.15);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.3);
+        transition: background 0.2s;
+        white-space: nowrap;
+      " onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+         onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+        🔐 Admin
+      </a>
     </div>
 
     <div id="mapa">
@@ -151,31 +209,20 @@
     <div class="info-panel">
       <h3>ℹ️ Información del mapa</h3>
       <p>Haz clic en cualquier municipio para ver más detalles. Pasa el cursor sobre los municipios para ver su nombre.
-        Este es un mapa interactivo del Departamento del Cauca, diseñado para mostrar información relevante sobre cada municipio. Utiliza las herramientas de zoom y desplazamiento para explorar diferentes áreas del mapa.
+        Este es un mapa interactivo del Departamento del Cauca, diseñado para mostrar información relevante sobre cada municipio. Utiliza las herramientas de zoom y desplazamiento para explorar diferentes áreas.
       </p>
-      
-      <h4 style="margin-top: 15px; margin-bottom: 10px;">🎨 Leyenda de regiones:</h4>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 20px; height: 20px; background-color: #5DADE2; border-radius: 3px; border: 1px solid #2c3e50;"></span>
-          <span><strong>Oriente</strong></span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 20px; height: 20px; background-color: #58D68D; border-radius: 3px; border: 1px solid #2c3e50;"></span>
-          <span><strong>Occidente</strong></span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 20px; height: 20px; background-color: #F4D35E; border-radius: 3px; border: 1px solid #2c3e50;"></span>
-          <span><strong>Sur</strong></span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 20px; height: 20px; background-color: #F8A855; border-radius: 3px; border: 1px solid #2c3e50;"></span>
-          <span><strong>Centro</strong></span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 20px; height: 20px; background-color: #D97373; border-radius: 3px; border: 1px solid #2c3e50;"></span>
-          <span><strong>Norte</strong></span>
-        </div>
+
+      <h4 style="margin-top: 18px; margin-bottom: 4px; color: #555; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Regiones</h4>
+      <div class="legend-grid">
+        <div class="legend-item"><span class="legend-color" style="background:#5DADE2;"></span>Oriente</div>
+        <div class="legend-item"><span class="legend-color" style="background:#58D68D;"></span>Occidente</div>
+        <div class="legend-item"><span class="legend-color" style="background:#F4D35E;"></span>Sur</div>
+        <div class="legend-item"><span class="legend-color" style="background:#F8A855;"></span>Centro</div>
+        <div class="legend-item"><span class="legend-color" style="background:#D97373;"></span>Norte</div>
+      </div>
+
+      <div class="info-footer">
+        Nasa Kiwe &mdash; Departamento del Cauca, Colombia
       </div>
     </div>
   </div>

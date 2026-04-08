@@ -1,13 +1,7 @@
-console.log('✅ Script mapa.js cargado');
-
-// ✅ VERIFICAR que Highcharts esté disponible
 if (typeof Highcharts === 'undefined') {
-  console.error('❌ ERROR: Highcharts no está cargado. Asegúrate de incluir el script de Highcharts ANTES de mapa.js');
   alert('Error: Highcharts no se cargó correctamente. Revisa la consola.');
   throw new Error('Highcharts is not defined');
 }
-
-console.log('✅ Highcharts detectado correctamente');
 
 (async () => {
   // Ocultar loading cuando termine
@@ -16,7 +10,6 @@ console.log('✅ Highcharts detectado correctamente');
     if (loading) loading.style.display = 'none';
   }
 
-  // Mostrar error visual
   function showError(message) {
     hideLoading();
     const mapaDiv = document.getElementById('mapa');
@@ -31,90 +24,55 @@ console.log('✅ Highcharts detectado correctamente');
     `;
   }
 
-  // Helper: fetch local geojson or remote fallback
   async function loadGeoJSON(pathLocal, fallbackUrl) {
-    console.log('🔍 Intentando cargar:', pathLocal);
-    
-    // Primero intentar local
     try {
       const r = await fetch(pathLocal);
-      if (r.ok) {
-        const data = await r.json();
-        console.log('✅ GeoJSON local cargado:', pathLocal);
-        return data;
-      }
-      console.warn('⚠️ No se pudo cargar local (status:', r.status, ')');
-    } catch (e) {
-      console.warn('⚠️ Error cargando local:', pathLocal, e.message);
-    }
-
-    // Intentar fallback
-    console.log('🔍 Intentando fallback:', fallbackUrl);
+      if (r.ok) return await r.json();
+    } catch (_) {}
     try {
       const r2 = await fetch(fallbackUrl);
-      if (r2.ok) {
-        const data = await r2.json();
-        console.log('✅ GeoJSON fallback cargado:', fallbackUrl);
-        return data;
-      }
-      console.error('❌ Fallback falló (status:', r2.status, ')');
-    } catch (e) {
-      console.error('❌ Error cargando fallback:', fallbackUrl, e.message);
-    }
-    
+      if (r2.ok) return await r2.json();
+    } catch (_) {}
     return null;
   }
 
-  // Small safe function to get a feature's display name
   function featureName(feature) {
     if (!feature || !feature.properties) return 'Sin nombre';
-    
-    const props = feature.properties;
-    return props.MPIO_CNMBR || 
-           props.NOMBRE_MPIO || 
-           props.name || 
-           props.NOMBRE || 
-           props.NOMBRE_MUNIC || 
-           feature.id || 
-           'Sin nombre';
+    const p = feature.properties;
+    return p.MPIO_CNMBR || p.NOMBRE_MPIO || p.name || p.NOMBRE || p.NOMBRE_MUNIC || feature.id || 'Sin nombre';
   }
 
-  // Build chart after loading geojson
+  // Calcular centroide de una geometría GeoJSON
+  function getCentroid(geometry) {
+    if (!geometry || !geometry.coordinates) return null;
+    let sumLat = 0, sumLon = 0, count = 0;
+    function extractCoords(coords, depth) {
+      if (depth === 0 && Array.isArray(coords[0])) {
+        if (typeof coords[0][0] === 'number') {
+          coords.forEach(c => { sumLon += c[0]; sumLat += c[1]; count++; });
+        } else {
+          coords.forEach(ring => extractCoords(ring, depth + 1));
+        }
+      }
+    }
+    extractCoords(geometry.coordinates, 0);
+    return count > 0 ? { lon: sumLon / count, lat: sumLat / count } : null;
+  }
+
   try {
-    // Intentar cargar GeoJSON
     const geojson = await loadGeoJSON(
       './municipios.geojson',
       'https://raw.githubusercontent.com/caticoa3/colombia_mapa/master/co_2018_MGN_MPIO_POLITICO.geojson'
     );
 
-    if (!geojson) {
-      throw new Error('No se pudo cargar ningún archivo GeoJSON (ni local ni remoto)');
-    }
+    if (!geojson) throw new Error('No se pudo cargar ningún archivo GeoJSON (ni local ni remoto)');
+    if (!geojson.features || geojson.features.length === 0) throw new Error('El GeoJSON no contiene features válidos');
 
-    if (!geojson.features || geojson.features.length === 0) {
-      throw new Error('El GeoJSON no contiene features válidos');
-    }
-
-    console.log('📊 Features encontrados:', geojson.features.length);
-
-    // Filtrar solo el Cauca si estamos usando el archivo de Colombia completo
     let caucaGeoJSON = geojson;
     if (geojson.features.length > 50) {
-      console.log('🔍 Detectado archivo de Colombia completo, filtrando solo Cauca...');
-      const caucaFeatures = geojson.features.filter(f => {
-        return f.properties && f.properties.DPTO_CCDGO === "19";
-      });
-      
-      if (caucaFeatures.length === 0) {
-        throw new Error('No se encontraron municipios del Cauca en el GeoJSON');
-      }
-
-      caucaGeoJSON = {
-        type: "FeatureCollection",
-        features: caucaFeatures
-      };
-      
-      console.log('✅ Filtrado completado:', caucaFeatures.length, 'municipios del Cauca');
+      const caucaFeatures = geojson.features.filter(f => f.properties && f.properties.DPTO_CCDGO === "19");
+      if (caucaFeatures.length === 0) throw new Error('No se encontraron municipios del Cauca en el GeoJSON');
+      caucaGeoJSON = { type: "FeatureCollection", features: caucaFeatures };
     }
 
     hideLoading();
@@ -172,36 +130,8 @@ console.log('✅ Highcharts detectado correctamente');
         borderColor: '#2c3e50',
         borderWidth: 1.2,
         
-        data: caucaGeoJSON.features.map((f, i) => {
+        data: caucaGeoJSON.features.map((f) => {
           const name = featureName(f);
-          
-          // Función para calcular el centroide de la geometría
-          function getCentroid(geometry) {
-            if (!geometry || !geometry.coordinates) return null;
-            
-            let sumLat = 0, sumLon = 0, count = 0;
-            
-            function extractCoords(coords, depth = 0) {
-              if (depth === 0 && Array.isArray(coords[0])) {
-                if (typeof coords[0][0] === 'number') {
-                  // Array de coordenadas
-                  coords.forEach(coord => {
-                    sumLon += coord[0];
-                    sumLat += coord[1];
-                    count++;
-                  });
-                } else {
-                  // Array de arrays (Polygon o MultiPolygon)
-                  coords.forEach(ring => extractCoords(ring, depth + 1));
-                }
-              }
-            }
-            
-            extractCoords(geometry.coordinates);
-            return count > 0 ? { lon: sumLon / count, lat: sumLat / count } : null;
-          }
-          
-          // Obtener centro del municipio
           const center = getCentroid(f.geometry);
           
           // Nombres de municipios para clasificarlos manualmente si es necesario
@@ -266,35 +196,17 @@ console.log('✅ Highcharts detectado correctamente');
         point: {
           events: {
             mouseOver: function () {
-              try {
-                console.log('🖱️ HOVER:', this.name);
-                showHoverLabel(this, chart);
-                this.setState('hover');
-              } catch (e) {
-                console.error('Error en mouseOver:', e);
-              }
+              showHoverLabel(this, chart);
+              this.setState('hover');
             },
-            
+
             mouseOut: function () {
-              try {
-                console.log('👋 SALISTE:', this.name);
-                hideHoverLabel();
-                this.setState('');
-              } catch (e) {
-                console.error('Error en mouseOut:', e);
-              }
+              hideHoverLabel();
+              this.setState('');
             },
-            
+
             click: function () {
-              try {
-                console.log('🖱️ CLICK:', this.name);
-                // Redirigir a página de detalles del municipio
-                const municipio = encodeURIComponent(this.name);
-                window.location.href = `municipio.html?dept=${municipio}`;
-              } catch (e) {
-                console.error('Error en click:', e);
-                alert('Detalles del municipio: ' + this.name);
-              }
+              window.location.href = `municipio.html?dept=${encodeURIComponent(this.name)}`;
             }
           }
         }
@@ -370,8 +282,6 @@ console.log('✅ Highcharts detectado correctamente');
       hoverDiv.style.transform = 'translate(-50%, -120%) scale(0.95)';
     }
 
-    console.log('✅ Mapa cargado exitosamente con', caucaGeoJSON.features.length, 'municipios');
-    console.log('🎉 Todo funcionando correctamente!');
 
   } catch (err) {
     console.error('❌ Error inicializando mapa:', err);

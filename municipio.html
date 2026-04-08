@@ -88,13 +88,16 @@
     }
 
     .back-button {
-      display: inline-block;
-      padding: 12px 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
       background: linear-gradient(135deg, #D97373 0%, #B85555 100%);
       color: white;
       text-decoration: none;
       border-radius: 6px;
       font-weight: 600;
+      font-size: 14px;
       transition: all 0.3s;
       margin-top: 20px;
     }
@@ -102,6 +105,18 @@
     .back-button:hover {
       background: linear-gradient(135deg, #B85555 0%, #9A4545 100%);
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(185,85,85,0.3);
+    }
+
+    .entry-status-bar {
+      height: 4px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .header h1 { font-size: 24px; }
+      .content { padding: 20px 16px; }
     }
 
     .filter-row {
@@ -227,7 +242,7 @@
         </div>
       </div>
 
-      <a href="index.html" class="back-button">⬅️ Volver al mapa</a>
+      <a href="index.html" class="back-button">← Volver al mapa</a>
     </div>
   </div>
 

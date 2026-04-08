@@ -151,49 +151,49 @@ const MIN_YEAR = 2000;
     return el;
   }
 
-  async function loadAndRender(year) {
+  // Cache de entradas para evitar doble llamada a la API
+  let cachedEntries = [];
+
+  async function fetchEntries() {
+    const res = await fetch(`${API_BASE}/municipio/${encodeURIComponent(dept)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()).map(normalizeEntry).sort((a, b) => Number(b.year) - Number(a.year));
+  }
+
+  function renderEntries(entries, year) {
     if (!entriesDiv) return;
+    entriesDiv.innerHTML = '';
+    const filtered = year ? entries.filter(e => String(e.year) === String(year)) : entries;
+    if (filtered.length === 0) {
+      entriesDiv.innerHTML = '<p class="empty">No hay información disponible para este filtro.</p>';
+      return;
+    }
+    filtered.forEach(e => entriesDiv.appendChild(renderEntry(e)));
+  }
+
+  function populateYearFilter(entries) {
+    if (!filterYear) return;
+    const years = new Set(entries.map(e => Number(e.year)).filter(y => Number.isInteger(y) && y >= MIN_YEAR));
+    filterYear.innerHTML = '<option value="">-- Todos los años --</option>' +
+      Array.from(years).sort((a, b) => b - a).map(y => `<option value="${y}">${y}</option>`).join('');
+  }
+
+  async function init() {
+    if (!entriesDiv) return;
+    entriesDiv.innerHTML = '<p class="empty">Cargando información...</p>';
     try {
-      const res = await fetch(`${API_BASE}/municipio/${encodeURIComponent(dept)}`);
-      const entries = (await res.json()).map(normalizeEntry).sort((a, b) => Number(b.year) - Number(a.year));
-      
-      entriesDiv.innerHTML = '';
-      const filtered = year ? entries.filter(e => String(e.year) === String(year)) : entries;
-      
-      if (filtered.length === 0) { 
-        entriesDiv.innerHTML = '<p class="empty">No hay información disponible para este filtro.</p>'; 
-        return; 
-      }
-      
-      filtered.forEach(e => {
-        entriesDiv.appendChild(renderEntry(e));
-      });
+      cachedEntries = await fetchEntries();
+      populateYearFilter(cachedEntries);
+      renderEntries(cachedEntries, null);
     } catch (err) {
       console.error('Error cargando datos:', err);
-      entriesDiv.innerHTML = '<p style="color:red;">Error al cargar información.</p>';
+      entriesDiv.innerHTML = '<p style="color:#dc2626;">Error al cargar información. Intenta recargar la página.</p>';
     }
   }
 
-  function populateYearFilter(){
-    if (!filterYear) return;
-    fetch(`${API_BASE}/municipio/${encodeURIComponent(dept)}`)
-      .then(res => res.json())
-      .then(entries => {
-        const years = new Set(entries.map(e => Number(e.year)).filter(y => Number.isInteger(y) && y >= MIN_YEAR));
-        const now = new Date().getFullYear();
-        for (let y = now; y >= MIN_YEAR; y--) { years.add(y); }
-        const arr = Array.from(years).sort((a, b) => b - a);
-        filterYear.innerHTML = '<option value="">-- Todos los años --</option>' + arr.map(y => `<option value="${y}">${y}</option>`).join('');
-      })
-      .catch(err => console.error('Error cargando años:', err));
-  }
+  if (filterYear) filterYear.addEventListener('change', () => renderEntries(cachedEntries, filterYear.value || null));
+  if (clearFilter) clearFilter.addEventListener('click', () => { if (filterYear) filterYear.value = ''; renderEntries(cachedEntries, null); });
 
-  if (filterYear) filterYear.addEventListener('change', () => loadAndRender(filterYear.value || null));
-  if (clearFilter) clearFilter.addEventListener('click', () => { if (filterYear) filterYear.value = ''; loadAndRender(null); });
-
-  // Inicializar
-  console.log('✅ Vista pública del municipio:', dept);
-  populateYearFilter();
-  loadAndRender(null);
+  init();
 
 })();
